@@ -71,17 +71,172 @@ async function OnPopupCreation(popup: any) {
                             cPlusFilterOK.innerHTML = `<div class="${findModule(e => e.GameInfoButton).MenuButton} Focusable" tabindex="0" role="button">OK</div>`;
                             collOptionsDiv.insertBefore(cPlusFilterOK, cPlusFilterBox.nextSibling);
 
+                            if (addMode) {
+                                cPlusFilterBox.firstChild.value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add" });
+                            } else {
+                                cPlusFilterBox.firstChild.value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove" });
+                            }
+
                             cPlusFilterOK.addEventListener("click", async () => {
                                 console.log("[steam-collections-plus] Applying", cPlusFilterBox.firstChild.value);
-                                cPlusFilterOK.firstChild.textContent = "Working...";
+                                cPlusFilterOK.firstChild.innerHTML = "Working...";
+                                //debugger;
 
-                                // TODO
+                                var checkedList = undefined;
+                                if (addMode) {
+                                    checkedList = collectionStore.allAppsCollection.allApps;
+                                } else {
+                                    checkedList = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId).allApps;
+                                }
+
+                                const checkedFilterCollection = cPlusFilterBox.firstChild.value.split(";");
+                                for (let i = 0; i < checkedList.length; i++) {
+                                    const currentApp = checkedList[i];
+                                    cPlusFilterOK.firstChild.innerHTML = `Working... (${i}/${checkedList.length})`;
+
+                                    var allTrue = true;
+                                    for (let j = 0; j < checkedFilterCollection.length; j++) {
+                                        const currentFilter = checkedFilterCollection[j].split(" ");
+                                        const leftObjectName = currentFilter[0];
+                                        const objectOperator = currentFilter[1];
+
+                                        if (leftObjectName === "collection") {
+                                            const rightValue = collectionStore.GetUserCollectionsByName(currentFilter[2])[0];
+                                            if (objectOperator === "=") {
+                                                if (rightValue.allApps.findIndex((x) => x.appid === currentApp.appid) === -1) {
+                                                    allTrue = false;
+                                                    break;
+                                                }
+                                            } else if (objectOperator === "!=") {
+                                                if (rightValue.allApps.findIndex((x) => x.appid === currentApp.appid) > -1) {
+                                                    allTrue = false;
+                                                    break;
+                                                }
+                                            } else {
+                                                console.log("[steam-collections-plus] Invalid operator");
+                                            }
+                                        } else if (leftObjectName === "category") {
+                                            const rightValue = currentFilter[2];
+                                            if (objectOperator === "=") {
+                                                if (!currentApp.m_setStoreCategories.has(Number(rightValue))) {
+                                                    allTrue = false;
+                                                    break;
+                                                }
+                                            } else if (objectOperator === "!=") {
+                                                if (currentApp.m_setStoreCategories.has(Number(rightValue))) {
+                                                    allTrue = false;
+                                                    break;
+                                                }
+                                            } else {
+                                                console.log("[steam-collections-plus] Invalid operator");
+                                            }
+                                        } else if (leftObjectName === "tag") {
+                                            const rightValue = currentFilter[2];
+                                            if (objectOperator === "=") {
+                                                if (!currentApp.m_setStoreTags.has(Number(rightValue))) {
+                                                    allTrue = false;
+                                                    break;
+                                                }
+                                            } else if (objectOperator === "!=") {
+                                                if (currentApp.m_setStoreTags.has(Number(rightValue))) {
+                                                    allTrue = false;
+                                                    break;
+                                                }
+                                            } else {
+                                                console.log("[steam-collections-plus] Invalid operator");
+                                            }
+                                        } else {
+                                            const leftObjectValue = currentApp[leftObjectName];
+                                            const leftObjectType = typeof(leftObjectValue);
+                                            if (leftObjectType === 'boolean') {
+                                                if (objectOperator === "true") {
+                                                    if (!leftObjectValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else if (objectOperator === "false") {
+                                                    if (leftObjectValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else {
+                                                    console.log("[steam-collections-plus] Invalid operator");
+                                                }
+                                            } else if (leftObjectType === 'string') {
+                                                const rightValue = currentFilter[2];
+                                                if (objectOperator === "=") {
+                                                    if (leftObjectValue !== rightValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else if (objectOperator === "!=") {
+                                                    if (leftObjectValue === rightValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else if (objectOperator === "begins") {
+                                                    if (!leftObjectValue.startsWith(rightValue)) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else {
+                                                    console.log("[steam-collections-plus] Invalid operator");
+                                                }
+                                            } else if (leftObjectType === 'number') {
+                                                const rightValue = Number(currentFilter[2]);
+                                                if (objectOperator === "=") {
+                                                    if (leftObjectValue !== rightValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else if (objectOperator === "!=") {
+                                                    if (leftObjectValue === rightValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else if (objectOperator === "<") {
+                                                    if (leftObjectValue >= rightValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else if (objectOperator === ">") {
+                                                    if (leftObjectValue <= rightValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else if (objectOperator === "<=") {
+                                                    if (leftObjectValue > rightValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else if (objectOperator === ">=") {
+                                                    if (leftObjectValue < rightValue) {
+                                                        allTrue = false;
+                                                        break;
+                                                    }
+                                                } else {
+                                                    console.log("[steam-collections-plus] Invalid operator");
+                                                }
+                                            } else {
+                                                console.log("[steam-collections-plus] Unsupported left object type");
+                                            }
+                                        }
+                                    }
+
+                                    if (allTrue) {
+                                        // Add or remove app
+                                        // TEST
+                                        console.log("[steam-collections-plus] Would add/delete", currentApp.display_name);
+                                    }
+                                }
 
                                 cPlusFilterOK.remove();
                                 cPlusFilterBox.remove();
                                 if (addMode) {
+                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add", op_data: cPlusFilterBox.firstChild.value });
                                     console.log("[steam-collections-plus] Applications added to", uiStore.currentGameListSelection.strCollectionId);
                                 } else {
+                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove", op_data: cPlusFilterBox.firstChild.value });
                                     console.log("[steam-collections-plus] Applications removed from", uiStore.currentGameListSelection.strCollectionId);
                                 }
                             });
