@@ -80,7 +80,6 @@ async function OnPopupCreation(popup: any) {
                             cPlusFilterOK.addEventListener("click", async () => {
                                 console.log("[steam-collections-plus] Applying", cPlusFilterBox.firstChild.value);
                                 cPlusFilterOK.firstChild.innerHTML = "Working...";
-                                //debugger;
 
                                 var checkedList = undefined;
                                 if (addMode) {
@@ -224,9 +223,8 @@ async function OnPopupCreation(popup: any) {
                                     }
 
                                     if (allTrue) {
-                                        // Add or remove app
-                                        // TEST
-                                        console.log("[steam-collections-plus] Would add/delete", currentApp.display_name);
+                                        console.log("[steam-collections-plus] Found", currentApp.display_name);
+                                        collectionStore.AddOrRemoveApp([currentApp.appid], addMode, uiStore.currentGameListSelection.strCollectionId);
                                     }
                                 }
 
