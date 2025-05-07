@@ -1,0 +1,9 @@
+{
+    "$schema": "https://raw.githubusercontent.com/SteamClientHomebrew/Millennium/main/src/sys/plugin-schema.json",
+
+    "name": "steam-collections-plus",
+    "common_name": "Collections+",
+    "description": "Extra functionality for collections",
+    "version": "1.0.0",
+    "include": ["config.json"]
+}
