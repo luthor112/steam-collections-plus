@@ -63,14 +63,38 @@ async function OnPopupCreation(popup: any) {
                     collOptionsDiv.insertBefore(cPlusButton, collOptionsDiv.firstChild.nextSibling);
 
                     cPlusButton.addEventListener("click", async () => {
+                        async function showBulkUI(addMode) {
+                            const cPlusFilterBox = popup.m_popup.document.createElement("div");
+                            cPlusFilterBox.innerHTML = '<input type="text" placeholder="filter" class="DialogInput DialogInputPlaceholder DialogTextInputBase Focusable" value="">';//</div><div class="${findModule(e => e.GameInfoButton).MenuButton} Focusable" tabindex="0" role="button">OK</div>`;
+                            collOptionsDiv.insertBefore(cPlusFilterBox, cPlusButton.nextSibling);
+                            const cPlusFilterOK = popup.m_popup.document.createElement("div");
+                            cPlusFilterOK.innerHTML = `<div class="${findModule(e => e.GameInfoButton).MenuButton} Focusable" tabindex="0" role="button">OK</div>`;
+                            collOptionsDiv.insertBefore(cPlusFilterOK, cPlusFilterBox.nextSibling);
+
+                            cPlusFilterOK.addEventListener("click", async () => {
+                                console.log("[steam-collections-plus] Applying", cPlusFilterBox.firstChild.value);
+                                cPlusFilterOK.firstChild.textContent = "Working...";
+
+                                // TODO
+
+                                cPlusFilterOK.remove();
+                                cPlusFilterBox.remove();
+                                if (addMode) {
+                                    console.log("[steam-collections-plus] Applications added to", uiStore.currentGameListSelection.strCollectionId);
+                                } else {
+                                    console.log("[steam-collections-plus] Applications removed from", uiStore.currentGameListSelection.strCollectionId);
+                                }
+                            });
+                        }
+                        
                         showContextMenu(
                             <Menu label="Collections+ Options">
                                 <MenuItem onClick={async () => {
-                                    console.log("[steam-collections-plus] Applications added to", uiStore.currentGameListSelection.strCollectionId);
+                                    showBulkUI(true);
                                 }}> Add applications in bulk </MenuItem>
 
                                 <MenuItem onClick={async () => {
-                                    console.log("[steam-collections-plus] Applications removed from", uiStore.currentGameListSelection.strCollectionId);
+                                    showBulkUI(false);
                                 }}> Remove applications in bulk </MenuItem>
 
                                 <MenuItem onClick={async () => {
