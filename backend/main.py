@@ -1,7 +1,6 @@
 import Millennium, PluginUtils # type: ignore
 logger = PluginUtils.Logger()
 
-import base64
 import json
 import os
 
@@ -29,12 +28,12 @@ def save_coll_db():
         json.dump(coll_db, fp)
 
 def get_encoded_image(fname):
-    with open(fname, "rb") as fp:
-        return base64.standard_b64encode(fp.read()).decode()
+    with open(fname, "rt") as fp:
+        return fp.read()
 
 def save_encoded_image(fname, fdata):
-    with open(fname, "wb") as fp:
-        fp.write(base64.standard_b64decode(fdata))
+    with open(fname, "wt") as fp:
+        fp.write(fdata)
 
 ###########
 # DB UTIL #
@@ -43,20 +42,23 @@ def save_encoded_image(fname, fdata):
 def db_get_image(coll_id):
     global coll_db
     if coll_id in coll_db:
-        if "imagetype" in coll_db[coll_id]:
-            image_type = coll_db[coll_id]["imagetype"]
-            if image_type != "":
-                encoded_image = get_encoded_image(os.path.join(get_art_dir(), f"{coll_id}.{image_type}"))
-                return f"{image_type};{encoded_image}"
+        if "image" in coll_db[coll_id]:
+            fname = os.path.join(get_art_dir(), coll_id)
+            if coll_db[coll_id]["image"] and os.path.exists(fname):
+                return get_encoded_image(fname)
     return ""
 
-def db_save_image(coll_id, image_type, image_data):
+def db_save_image(coll_id, image_data):
     global coll_db
-    if coll_id in coll_id:
+    if coll_id not in coll_db:
         coll_db[coll_id] = {}
-    if image_type != "":
-        save_encoded_image(os.path.join(get_art_dir(), f"{coll_id}.{image_type}"), image_data)
-    coll_db[coll_id]["imagetype"] = image_type
+
+    if image_data != "":
+        fname = os.path.join(get_art_dir(), coll_id)
+        save_encoded_image(fname, image_data)
+        coll_db[coll_id]["image"] = True
+    else:
+        coll_db[coll_id]["image"] = False
     save_coll_db()
 
 def db_get_last(coll_id, op_type):
@@ -70,6 +72,7 @@ def db_set_last(coll_id, op_type, op_data):
     global coll_db
     if coll_id not in coll_db:
         coll_db[coll_id] = {}
+
     coll_db[coll_id][op_type] = op_data
     save_coll_db()
 
@@ -84,9 +87,9 @@ class Backend:
         return db_get_image(coll_id)
 
     @staticmethod
-    def set_coll_image(coll_id, image_type, image_data):
-        logger.log(f"set_coll_image() called for collection {coll_id} with image type {image_type}")
-        db_save_image(coll_id, image_type, image_data)
+    def set_coll_image(coll_id, image_data):
+        logger.log(f"set_coll_image() called for collection {coll_id}")
+        db_save_image(coll_id, image_data)
         return True
 
     @staticmethod
@@ -97,7 +100,7 @@ class Backend:
 
     @staticmethod
     def set_last_filter(coll_id, op_type, op_data):
-        logger.log(f"set_last_filter() called for collection {coll_id} with type {op_type}")
+        logger.log(f"set_last_filter() called for collection {coll_id} with type {op_type} and data {op_data}")
         db_set_last(coll_id, op_type, op_data)
         return True
 

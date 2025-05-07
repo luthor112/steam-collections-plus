@@ -2,7 +2,7 @@ import { callable, findModule, Millennium, Menu, MenuItem, showContextMenu } fro
 
 // Backend functions
 const get_coll_image = callable<[{ coll_id: string }], string>('Backend.get_coll_image');
-const set_coll_image = callable<[{ coll_id: string, image_type: string, image_data: string }], boolean>('Backend.set_coll_image');
+const set_coll_image = callable<[{ coll_id: string, image_data: string }], boolean>('Backend.set_coll_image');
 const get_last_filter = callable<[{ coll_id: string, op_type: string }], string>('Backend.get_last_filter');
 const set_last_filter = callable<[{ coll_id: string, op_type: string, op_data: string }], boolean>('Backend.set_last_filter');
 
@@ -33,7 +33,26 @@ async function OnPopupCreation(popup: any) {
 
         MainWindowBrowserManager.m_browser.on("finished-request", async (currentURL, previousURL) => {
             if (MainWindowBrowserManager.m_lastLocation.pathname === "/library/collections") {
-                // TODO: Images
+                const collGrid = await WaitForElement(`div.${findModule(e => e.CSSGrid).CSSGrid}`, popup.m_popup.document);
+                if (collGrid) {
+                    const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
+                    for (let i = 0; i < collItemList.length; i++) {
+                        const collName = collItemList[i].querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.${findModule(e => e.CollectionLabelCount).CollectionLabelCount})`).textContent;
+                        console.log("[steam-collections-plus] Processing collection", collName);
+
+                        var collID = "type-music";
+                        const collObj = collectionStore.GetUserCollectionsByName(collName);
+                        if (collObj.length > 0) {
+                            collID = collObj[0].m_strId;
+                        }
+
+                        const imageData = await get_coll_image({ coll_id: collID });
+                        if (imageData !== "") {
+                            collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
+                            collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
+                        }
+                    }
+                }
             } else if (MainWindowBrowserManager.m_lastLocation.pathname.startsWith("/library/collection/")) {
                 const collOptionsDiv = await WaitForElement(`div.${findModule(e => e.CollectionOptions).CollectionOptions}`, popup.m_popup.document);
                 const oldCPlusButton = collOptionsDiv.querySelector('div.collectionsplus-button');
@@ -63,12 +82,10 @@ async function OnPopupCreation(popup: any) {
                                             console.log(e.target.files[0]);
                                             const imageFile = e.target.files[0];
                                             if (imageFile) {
-                                                const imageType = imageFile.name.substring(imageFile.name.lastIndexOf(".")+1);
                                                 const reader = new FileReader();
-                                                reader.onload = (f) => {
+                                                reader.onload = async (f) => {
                                                     const imageData = reader.result;
-                                                    console.log(imageType);
-                                                    console.log(imageData);
+                                                    await set_coll_image({ coll_id: uiStore.currentGameListSelection.strCollectionId, image_data: imageData });
 
                                                     console.log("[steam-collections-plus] Image set for", uiStore.currentGameListSelection.strCollectionId);
                                                 };
@@ -82,7 +99,7 @@ async function OnPopupCreation(popup: any) {
                                 }}> Set collection image </MenuItem>
 
                                 <MenuItem onClick={async () => {
-                                    await set_coll_image({ coll_id: uiStore.currentGameListSelection.strCollectionId, image_type: "", image_data: "" });
+                                    await set_coll_image({ coll_id: uiStore.currentGameListSelection.strCollectionId, image_data: "" });
 
                                     console.log("[steam-collections-plus] Image reset for", uiStore.currentGameListSelection.strCollectionId);
                                 }}> Reset collection image </MenuItem>
