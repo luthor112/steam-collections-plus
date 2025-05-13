@@ -1,4 +1,5 @@
-import { callable, findModule, Millennium, Menu, MenuItem, showContextMenu } from "@steambrew/client";
+import { callable, findModule, Millennium, Menu, MenuItem, showContextMenu, DialogButton, TextField } from "@steambrew/client";
+import { render } from "react-dom";
 
 // Backend functions
 const get_coll_image = callable<[{ coll_id: string }], string>('Backend.get_coll_image');
@@ -55,30 +56,30 @@ async function OnPopupCreation(popup: any) {
                 }
             } else if (MainWindowBrowserManager.m_lastLocation.pathname.startsWith("/library/collection/")) {
                 const collOptionsDiv = await WaitForElement(`div.${findModule(e => e.CollectionOptions).CollectionOptions}`, popup.m_popup.document);
-                const oldCPlusButton = collOptionsDiv.querySelector('div.collectionsplus-button');
+                const oldCPlusButton = collOptionsDiv.querySelector('button.collectionsplus-button');
                 if (!oldCPlusButton) {
                     const cPlusButton = popup.m_popup.document.createElement("div");
-                    cPlusButton.className = `${findModule(e => e.MenuButtonContainer).MenuButtonContainer} collectionsplus-button`;
-                    cPlusButton.innerHTML = `<div class="${findModule(e => e.GameInfoButton).MenuButton} Focusable" tabindex="0" role="button">C+</div>`;
+                    render(<DialogButton className="collectionsplus-button" style={{width: "40px"}}>C+</DialogButton>, cPlusButton);
                     collOptionsDiv.insertBefore(cPlusButton, collOptionsDiv.firstChild.nextSibling);
 
                     cPlusButton.addEventListener("click", async () => {
                         async function showBulkUI(addMode) {
                             const cPlusFilterBox = popup.m_popup.document.createElement("div");
-                            cPlusFilterBox.innerHTML = '<input type="text" placeholder="filter" class="DialogInput DialogInputPlaceholder DialogTextInputBase Focusable" value="">';//</div><div class="${findModule(e => e.GameInfoButton).MenuButton} Focusable" tabindex="0" role="button">OK</div>`;
+                            render(<TextField  placeholder="filter"></TextField>, cPlusFilterBox);
                             collOptionsDiv.insertBefore(cPlusFilterBox, cPlusButton.nextSibling);
                             const cPlusFilterOK = popup.m_popup.document.createElement("div");
-                            cPlusFilterOK.innerHTML = `<div class="${findModule(e => e.GameInfoButton).MenuButton} Focusable" tabindex="0" role="button">OK</div>`;
+                            render(<DialogButton style={{width: "40px"}}>OK</DialogButton>, cPlusFilterOK);
                             collOptionsDiv.insertBefore(cPlusFilterOK, cPlusFilterBox.nextSibling);
 
                             if (addMode) {
-                                cPlusFilterBox.firstChild.value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add" });
+                                cPlusFilterBox.querySelector("input").value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add" });
                             } else {
-                                cPlusFilterBox.firstChild.value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove" });
+                                cPlusFilterBox.querySelector("input").value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove" });
                             }
 
                             cPlusFilterOK.addEventListener("click", async () => {
-                                console.log("[steam-collections-plus] Applying", cPlusFilterBox.firstChild.value);
+                                const cPlusFilterValue = cPlusFilterBox.querySelector("input").value;
+                                console.log("[steam-collections-plus] Applying", cPlusFilterValue);
                                 cPlusFilterOK.firstChild.innerHTML = "Working...";
 
                                 var checkedList = undefined;
@@ -88,7 +89,7 @@ async function OnPopupCreation(popup: any) {
                                     checkedList = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId).allApps;
                                 }
 
-                                const checkedFilterCollection = cPlusFilterBox.firstChild.value.split(";");
+                                const checkedFilterCollection = cPlusFilterValue.split(";");
                                 for (let i = 0; i < checkedList.length; i++) {
                                     const currentApp = checkedList[i];
                                     cPlusFilterOK.firstChild.innerHTML = `Working... (${i}/${checkedList.length})`;
@@ -231,10 +232,10 @@ async function OnPopupCreation(popup: any) {
                                 cPlusFilterOK.remove();
                                 cPlusFilterBox.remove();
                                 if (addMode) {
-                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add", op_data: cPlusFilterBox.firstChild.value });
+                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add", op_data: cPlusFilterValue });
                                     console.log("[steam-collections-plus] Applications added to", uiStore.currentGameListSelection.strCollectionId);
                                 } else {
-                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove", op_data: cPlusFilterBox.firstChild.value });
+                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove", op_data: cPlusFilterValue });
                                     console.log("[steam-collections-plus] Applications removed from", uiStore.currentGameListSelection.strCollectionId);
                                 }
                             });
