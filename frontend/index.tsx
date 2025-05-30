@@ -1,4 +1,4 @@
-import { callable, findModule, Millennium, Menu, MenuItem, showContextMenu, DialogButton, TextField } from "@steambrew/client";
+import { callable, findModule, sleep, Millennium, Menu, MenuItem, showContextMenu, DialogButton, TextField } from "@steambrew/client";
 import { render } from "react-dom";
 
 // Backend functions
@@ -15,10 +15,6 @@ const WaitForElementTimeout = async (sel: string, parent = document, timeOut = 1
 
 const WaitForElementList = async (sel: string, parent = document) =>
 	[...(await Millennium.findElement(parent, sel))];
-
-async function sleep(msec) {
-    return new Promise(resolve => setTimeout(resolve, msec));
-}
 
 async function OnPopupCreation(popup: any) {
     if (popup.m_strName === "SP Desktop_uid0") {
@@ -281,6 +277,12 @@ async function OnPopupCreation(popup: any) {
 
                                     console.log("[steam-collections-plus] Image reset for", uiStore.currentGameListSelection.strCollectionId);
                                 }}> Reset collection image </MenuItem>
+
+                                <MenuItem onClick={async () => {
+                                    const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
+                                    const randomIndex = Math.floor(Math.random() * (currentColl.allApps.length + 1));
+                                    SteamClient.Apps.RunGame(currentColl.allApps[randomIndex].appid.toString(), "", 0, 0);
+                                }}> Start random application </MenuItem>
                             </Menu>,
                             cPlusButton,
                             { bForcePopup: true }
