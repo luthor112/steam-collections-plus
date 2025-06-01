@@ -76,6 +76,67 @@ def db_set_last(coll_id, op_type, op_data):
     coll_db[coll_id][op_type] = op_data
     save_coll_db()
 
+def db_get_folder(coll_id):
+    global coll_db
+    if coll_id in coll_db:
+        if "folder" in coll_db[coll_id]:
+            return coll_db[coll_id]["folder"]
+    return "root"
+
+def db_set_folder(coll_id, folder_path):
+    global coll_db
+    if coll_id not in coll_db:
+        coll_db[coll_id] = {}
+
+    coll_db[coll_id]["folder"] = folder_path
+    save_coll_db()
+
+def db_get_folder_list():
+    global coll_db
+    if "__folderlist" in coll_db:
+        return coll_db["__folderlist"]
+    return []
+
+def db_get_folder_map():
+    global coll_db
+    folder_map = {}
+    for coll_id, coll_data in coll_db.items():
+        if coll_id == "__folderlist":
+            continue
+
+        coll_folder = "root"
+        if "folder" in coll_data:
+            coll_folder = coll_data["folder"]
+        folder_map[coll_id] = coll_folder
+    return folder_map
+
+def db_add_folder(folder_path):
+    global coll_db
+    if "__folderlist" not in coll_db:
+        coll_db["__folderlist"] = []
+
+    coll_db["__folderlist"].append(folder_path)
+    save_coll_db()
+
+# TODO: Make this recursive
+def db_remove_folder(folder_path):
+    global coll_db
+    if "__folderlist" not in coll_db:
+        coll_db["__folderlist"] = []
+
+    if folder_path in coll_db["__folderlist"]:
+        coll_db["__folderlist"].remove(folder_path)
+
+    for coll_id, coll_data in coll_db.items():
+        if coll_id == "__folderlist":
+            continue
+
+        if "folder" in coll_data:
+            if coll_data["folder"] == folder_path:
+                coll_data["folder"] = "root"
+
+    save_coll_db()
+
 ##############
 # INTERFACES #
 ##############
@@ -102,6 +163,40 @@ class Backend:
     def set_last_filter(coll_id, op_type, op_data):
         logger.log(f"set_last_filter() called for collection {coll_id} with type {op_type} and data {op_data}")
         db_set_last(coll_id, op_type, op_data)
+        return True
+
+    @staticmethod
+    def get_folder(coll_id):
+        coll_folder = db_get_folder(coll_id)
+        logger.log(f"get_folder({coll_id}) -> {coll_folder}")
+        return coll_folder
+
+    @staticmethod
+    def set_folder(coll_id, folder_path):
+        logger.log(f"set_folder() called for collection {coll_id} with path {folder_path}")
+        db_set_folder(coll_id, folder_path)
+        return True
+
+    @staticmethod
+    def get_folder_list():
+        logger.log("get_folder_list() called")
+        return json.dumps(db_get_folder_list())
+
+    @staticmethod
+    def get_folder_map():
+        logger.log("get_folder_map() called")
+        return json.dumps(db_get_folder_map())
+
+    @staticmethod
+    def add_folder(folder_path):
+        logger.log(f"add_folder() called with path {folder_path}")
+        db_add_folder(folder_path)
+        return True
+
+    @staticmethod
+    def remove_folder(folder_path):
+        logger.log(f"remove_folder() called with path {folder_path}")
+        db_remove_folder(folder_path)
         return True
 
 class Plugin:

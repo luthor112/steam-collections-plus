@@ -6,6 +6,12 @@ const get_coll_image = callable<[{ coll_id: string }], string>('Backend.get_coll
 const set_coll_image = callable<[{ coll_id: string, image_data: string }], boolean>('Backend.set_coll_image');
 const get_last_filter = callable<[{ coll_id: string, op_type: string }], string>('Backend.get_last_filter');
 const set_last_filter = callable<[{ coll_id: string, op_type: string, op_data: string }], boolean>('Backend.set_last_filter');
+const get_folder = callable<[{ coll_id: string }], string>('Backend.get_folder');
+const set_folder = callable<[{ coll_id: string, folder_path: string }], boolean>('Backend.set_folder');
+const get_folder_list = callable<[{}], string>('Backend.get_folder_list');
+const get_folder_map = callable<[{}], string>('Backend.get_folder_map');
+const add_folder = callable<[{ folder_path: string }], boolean>('Backend.add_folder');
+const remove_folder = callable<[{ folder_path: string }], boolean>('Backend.remove_folder');
 
 const WaitForElement = async (sel: string, parent = document) =>
 	[...(await Millennium.findElement(parent, sel))][0];
@@ -30,6 +36,11 @@ async function OnPopupCreation(popup: any) {
 
         MainWindowBrowserManager.m_browser.on("finished-request", async (currentURL, previousURL) => {
             if (MainWindowBrowserManager.m_lastLocation.pathname === "/library/collections") {
+                var currentPath = "root";
+
+                const folderList = JSON.parse(await get_folder_list({}));
+                const folderMap = JSON.parse(await get_folder_map({}));
+
                 const collGrid = await WaitForElement(`div.${findModule(e => e.CSSGrid).CSSGrid}`, popup.m_popup.document);
                 if (collGrid) {
                     const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
@@ -48,6 +59,26 @@ async function OnPopupCreation(popup: any) {
                             collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
                             collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
                         }
+                        
+                        if (collID in folderMap) {
+                            collItemList[i].dataset.itempath = folderMap[collID];
+                        } else {
+                            collItemList[i].dataset.itempath = "root";
+                        }
+                    }
+                    
+                    const templateItem = collGrid.querySelector(`:scope > div.${findModule(e => e.NewCollection).NewCollection}`);
+                    for (let i = 0; i < folderList.length; i++) {
+                        const folderFullPath = folderList[i];
+                        const folderPath = folderFullPath.substring(0, folderFullPath.lastIndexOf("/"));
+                        const folderName = folderFullPath.substring(folderFullPath.lastIndexOf("/") + 1);
+                        
+                        const folderItem = templateItem.cloneNode(true);
+                        folderItem.querySelector(`div.${findModule(e => e.BigPlus).BigPlus}`).innerHTML = "📁";
+                        folderItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel}`).textContent = folderName;
+                        folderItem.dataset.itempath = folderPath;
+                        collGrid.insertBefore(folderItem, templateItem.nextSibling);
+                        // TODO: click event
                     }
                 }
             } else if (MainWindowBrowserManager.m_lastLocation.pathname.startsWith("/library/collection/")) {
