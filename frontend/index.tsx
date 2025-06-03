@@ -36,13 +36,30 @@ async function OnPopupCreation(popup: any) {
 
         MainWindowBrowserManager.m_browser.on("finished-request", async (currentURL, previousURL) => {
             if (MainWindowBrowserManager.m_lastLocation.pathname === "/library/collections") {
-                var currentPath = "root";
-
                 const folderList = JSON.parse(await get_folder_list({}));
                 const folderMap = JSON.parse(await get_folder_map({}));
 
                 const collGrid = await WaitForElement(`div.${findModule(e => e.CSSGrid).CSSGrid}`, popup.m_popup.document);
                 if (collGrid) {
+                    var currentPath = "root";
+
+                    const switchPath = async (newPath) => {
+                        const allItemsList = collGrid.querySelectorAll(":scope > div");
+                        for (let i = 0; i < allItemsList.length; i++) {
+                            if (allItemsList[i].dataset.itempath === newPath) {
+                                allItemsList[i].style.display = "";
+                            } else {
+                                allItemsList[i].style.display = "none";
+                            }
+                        }
+
+                        const titleTextElement = collGrid.parentElement.parentElement.parentElement.parentElement.firstChild.firstChild;
+                        const prettyPath = newPath.replaceAll("/", " ≫ ");
+                        titleTextElement.textContent = prettyPath;
+
+                        currentPath = newPath;
+                    };
+
                     const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
                     for (let i = 0; i < collItemList.length; i++) {
                         const collName = collItemList[i].querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.${findModule(e => e.CollectionLabelCount).CollectionLabelCount})`).textContent;
@@ -59,27 +76,40 @@ async function OnPopupCreation(popup: any) {
                             collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
                             collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
                         }
-                        
+
                         if (collID in folderMap) {
                             collItemList[i].dataset.itempath = folderMap[collID];
                         } else {
                             collItemList[i].dataset.itempath = "root";
                         }
                     }
-                    
+
                     const templateItem = collGrid.querySelector(`:scope > div.${findModule(e => e.NewCollection).NewCollection}`);
+                    templateItem.dataset.itempath = "root";
                     for (let i = 0; i < folderList.length; i++) {
                         const folderFullPath = folderList[i];
                         const folderPath = folderFullPath.substring(0, folderFullPath.lastIndexOf("/"));
                         const folderName = folderFullPath.substring(folderFullPath.lastIndexOf("/") + 1);
-                        
+
                         const folderItem = templateItem.cloneNode(true);
                         folderItem.querySelector(`div.${findModule(e => e.BigPlus).BigPlus}`).innerHTML = "📁";
                         folderItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel}`).textContent = folderName;
                         folderItem.dataset.itempath = folderPath;
                         collGrid.insertBefore(folderItem, templateItem.nextSibling);
-                        // TODO: click event
+
+                        folderItem.addEventListener("click", async () => {
+                            const newPath = folderPath + "/" + folderName;
+                            switchPath(newPath);
+                        });
                     }
+
+                    switchPath("root");
+
+                    const titleTextElement = collGrid.parentElement.parentElement.parentElement.parentElement.firstChild.firstChild;
+                    titleTextElement.addEventListener("click", async () => {
+                        const parentPath = currentPath.substring(0, currentPath.lastIndexOf("/"));
+                        switchPath(parentPath);
+                    });
                 }
             } else if (MainWindowBrowserManager.m_lastLocation.pathname.startsWith("/library/collection/")) {
                 const collOptionsDiv = await WaitForElement(`div.${findModule(e => e.CollectionOptions).CollectionOptions}`, popup.m_popup.document);
