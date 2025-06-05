@@ -118,21 +118,23 @@ def db_add_folder(folder_path):
     coll_db["__folderlist"].append(folder_path)
     save_coll_db()
 
-# TODO: Make this recursive
 def db_remove_folder(folder_path):
     global coll_db
     if "__folderlist" not in coll_db:
         coll_db["__folderlist"] = []
 
-    if folder_path in coll_db["__folderlist"]:
-        coll_db["__folderlist"].remove(folder_path)
+    new_folderlist = []
+    for current_folder_path in coll_db["__folderlist"]:
+        if not current_folder_path == folder_path and not current_folder_path.startswith(f"{folder_path}/"):
+            new_folderlist.append(current_folder_path)
+    coll_db["__folderlist"] = new_folderlist
 
     for coll_id, coll_data in coll_db.items():
         if coll_id == "__folderlist":
             continue
 
         if "folder" in coll_data:
-            if coll_data["folder"] == folder_path:
+            if coll_data["folder"] == folder_path or coll_data["folder"].startswith(f"{folder_path}/"):
                 coll_data["folder"] = "root"
 
     save_coll_db()

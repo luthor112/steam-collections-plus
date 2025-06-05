@@ -43,6 +43,7 @@ async function OnPopupCreation(popup: any) {
                 if (collGrid) {
                     var currentPath = "root";
 
+                    // Switch folder
                     const switchPath = async (newPath) => {
                         const allItemsList = collGrid.querySelectorAll(":scope > div");
                         for (let i = 0; i < allItemsList.length; i++) {
@@ -53,13 +54,14 @@ async function OnPopupCreation(popup: any) {
                             }
                         }
 
-                        const titleTextElement = collGrid.parentElement.parentElement.parentElement.parentElement.firstChild.firstChild;
-                        const prettyPath = newPath.replaceAll("/", " ≫ ");
-                        titleTextElement.textContent = prettyPath;
+                        const titlePathElement = collGrid.parentElement.parentElement.parentElement.parentElement.querySelector("div.steam-collections-plus-path");
+                        const prettyPath = ": " + newPath.replaceAll("/", " ≫ ");
+                        titlePathElement.textContent = prettyPath;
 
                         currentPath = newPath;
                     };
 
+                    // Tag all collections on the UI with an itempath
                     const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
                     for (let i = 0; i < collItemList.length; i++) {
                         const collName = collItemList[i].querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.${findModule(e => e.CollectionLabelCount).CollectionLabelCount})`).textContent;
@@ -84,6 +86,7 @@ async function OnPopupCreation(popup: any) {
                         }
                     }
 
+                    // Add folder items to the UI, incl. itempath
                     const templateItem = collGrid.querySelector(`:scope > div.${findModule(e => e.NewCollection).NewCollection}`);
                     templateItem.dataset.itempath = "root";
                     for (let i = 0; i < folderList.length; i++) {
@@ -98,18 +101,78 @@ async function OnPopupCreation(popup: any) {
                         collGrid.insertBefore(folderItem, templateItem.nextSibling);
 
                         folderItem.addEventListener("click", async () => {
-                            const newPath = folderPath + "/" + folderName;
+                            // Enter folder on click
+                            const newPath = folderFullPath;
                             switchPath(newPath);
+                        });
+
+                        folderItem.addEventListener("contextmenu", async () => {
+                            // Right click menu
+                            showContextMenu(
+                                <Menu label="Collections+ Folder Options">
+                                    <MenuItem onClick={async () => {
+                                        // Remove folder from database and UI
+                                        await remove_folder({ folder_path: folderFullPath });
+                                        folderItem.remove();
+
+                                        // Remove subfolders from UI
+                                        const allFolderItems = collGrid.querySelectorAll(`:scope > div.${findModule(e => e.NewCollection).NewCollection}`);
+                                        for (let j = 0; j < allFolderItems.length; j++) {
+                                            if (allFolderItems[j].dataset.itempath.startsWith(`${folderFullPath}/`)) {
+                                                allFolderItems[j].remove();
+                                            }
+                                        }
+
+                                        // Re-tag collections
+                                        const allCollectionItems = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
+                                        for (let j = 0; j < allCollectionItems.length; j++) {
+                                            if (allCollectionItems[j].dataset.itempath === folderFullPath || allCollectionItems[j].dataset.itempath.startsWith(`${folderFullPath}/`)) {
+                                                allCollectionItems[j].dataset.itempath = "root";
+                                            }
+                                        }
+
+                                        // Show moved collections if we are in root
+                                        switchPath(currentPath);
+                                    }}> Delete folder </MenuItem>
+                                </Menu>,
+                                folderItem.querySelector(`div.${findModule(e => e.BigPlus).BigPlus}`),
+                                { bForcePopup: true }
+                            );
+                        });
+                    }
+
+                    // Add new UI elements
+                    const oldTitlePathElement = collGrid.querySelector("div.steam-collections-plus-path");
+                    if (!oldTitlePathElement) {
+                        const titleTextElement = collGrid.parentElement.parentElement.parentElement.parentElement.firstChild.firstChild;
+                        const titlePathElement = titleTextElement.cloneNode(true);
+                        titlePathElement.classList.add("steam-collections-plus-path");
+                        titlePathElement.textContent = ": root";
+                        titleTextElement.parentElement.insertBefore(titlePathElement, titleTextElement.nextSibling);
+
+                        const upElement = titleTextElement.cloneNode(true);
+                        upElement.textContent = "[UP]";
+                        titleTextElement.parentElement.insertBefore(upElement, titleTextElement);
+
+                        upElement.addEventListener("click", async () => {
+                            // Leave folder
+                            if (currentPath !== "root") {
+                                const parentPath = currentPath.substring(0, currentPath.lastIndexOf("/"));
+                                switchPath(parentPath);
+                            }
+                        });
+
+                        const cPlusElement = titleTextElement.cloneNode(true);
+                        cPlusElement.textContent = "[C+]";
+                        titleTextElement.parentElement.insertBefore(cPlusElement, titleTextElement);
+
+                        cPlusElement.addEventListener("click", async () => {
+                            // TODO: Open folder management UI
+                            console.log("[steam-collections-plus] Open UI here!");
                         });
                     }
 
                     switchPath("root");
-
-                    const titleTextElement = collGrid.parentElement.parentElement.parentElement.parentElement.firstChild.firstChild;
-                    titleTextElement.addEventListener("click", async () => {
-                        const parentPath = currentPath.substring(0, currentPath.lastIndexOf("/"));
-                        switchPath(parentPath);
-                    });
                 }
             } else if (MainWindowBrowserManager.m_lastLocation.pathname.startsWith("/library/collection/")) {
                 const collOptionsDiv = await WaitForElement(`div.${findModule(e => e.CollectionOptions).CollectionOptions}`, popup.m_popup.document);
