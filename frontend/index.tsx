@@ -310,7 +310,8 @@ async function OnPopupCreation(popup: any) {
 
                                     var allTrue = true;
                                     for (let j = 0; j < checkedFilterCollection.length; j++) {
-                                        const currentFilter = checkedFilterCollection[j].split(" ");
+                                        const currentFilterTokens = checkedFilterCollection[j].split(" ");
+                                        const currentFilter = [currentFilterTokens[0], currentFilterTokens[1], currentFilterTokens.slice(2).join(" ")];
                                         const leftObjectName = currentFilter[0];
                                         const objectOperator = currentFilter[1];
 
