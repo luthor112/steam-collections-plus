@@ -1,5 +1,6 @@
-import { callable, findModule, sleep, Millennium, Menu, MenuItem, showContextMenu, DialogButton, TextField } from "@steambrew/client";
+import { callable, findModule, sleep, Millennium, Menu, MenuItem, showContextMenu, DialogButton, TextField, ModalRoot, showModal } from "@steambrew/client";
 import { render } from "react-dom";
+import React, { useState, useEffect } from "react";
 
 // Backend functions
 const get_coll_image = callable<[{ coll_id: string }], string>('Backend.get_coll_image');
@@ -79,6 +80,7 @@ async function OnPopupCreation(popup: any) {
                             collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
                         }
 
+                        collItemList[i].dataset.collectionid = collID;
                         if (collID in folderMap) {
                             collItemList[i].dataset.itempath = folderMap[collID];
                         } else {
@@ -87,10 +89,7 @@ async function OnPopupCreation(popup: any) {
                     }
 
                     // Add folder items to the UI, incl. itempath
-                    const templateItem = collGrid.querySelector(`:scope > div.${findModule(e => e.NewCollection).NewCollection}`);
-                    templateItem.dataset.itempath = "root";
-                    for (let i = 0; i < folderList.length; i++) {
-                        const folderFullPath = folderList[i];
+                    const addFolderItem = async (templateItem, folderFullPath) => {
                         const folderPath = folderFullPath.substring(0, folderFullPath.lastIndexOf("/"));
                         const folderName = folderFullPath.substring(folderFullPath.lastIndexOf("/") + 1);
 
@@ -139,6 +138,13 @@ async function OnPopupCreation(popup: any) {
                                 { bForcePopup: true }
                             );
                         });
+                    };
+                    
+                    const templateItem = collGrid.querySelector(`:scope > div.${findModule(e => e.NewCollection).NewCollection}`);
+                    templateItem.dataset.itempath = "root";
+                    for (let i = 0; i < folderList.length; i++) {
+                        const folderFullPath = folderList[i];
+                        addFolderItem(templateItem, folderFullPath);
                     }
 
                     // Add new UI elements
@@ -150,6 +156,7 @@ async function OnPopupCreation(popup: any) {
                         titlePathElement.textContent = ": root";
                         titleTextElement.parentElement.insertBefore(titlePathElement, titleTextElement.nextSibling);
 
+                        // Go to parent folder
                         const upElement = titleTextElement.cloneNode(true);
                         upElement.textContent = "[UP]";
                         titleTextElement.parentElement.insertBefore(upElement, titleTextElement);
@@ -162,13 +169,100 @@ async function OnPopupCreation(popup: any) {
                             }
                         });
 
+                        // Manage current folder
                         const cPlusElement = titleTextElement.cloneNode(true);
                         cPlusElement.textContent = "[C+]";
                         titleTextElement.parentElement.insertBefore(cPlusElement, titleTextElement);
 
                         cPlusElement.addEventListener("click", async () => {
-                            // TODO: Open folder management UI
-                            console.log("[steam-collections-plus] Open UI here!");
+                            const FolderManagementComponent: React.FC = (props) => {
+                                const [managedFolderName, setManagedFolderName] = useState<string>("root");
+                                const [collectionStateList, setCollectionStateList] = useState([]);
+
+                                // Get current data
+                                const GetCurrentSettings = async () => {
+                                    setManagedFolderName(currentPath.substring(currentPath.lastIndexOf("/") + 1));
+
+                                    let wipStateList = [];
+                                    const latestFolderMap = JSON.parse(await get_folder_map({}));
+                                    for (let i = 0; i < collectionStore.userCollections.length; i++) {
+                                        const currentCollID = collectionStore.userCollections[i].m_strId;
+                                        if (currentCollID !== "uncategorized") {
+                                            const currentCollName = collectionStore.userCollections[i].m_strName;
+                                            let currentCollFolder = "root";
+                                            if (currentCollID in latestFolderMap) {
+                                                currentCollFolder = latestFolderMap[currentCollID];
+                                            }
+                                            wipStateList.push({collectionID: currentCollID, collectionName: currentCollName, collectionFolder: currentCollFolder});
+                                        }
+                                    }
+                                    setCollectionStateList(wipStateList);
+                                };
+
+                                // Add subfolder
+                                const AddNewFolder = async (e) => {
+                                    const newFolderPath = currentPath + "/" + e.target.parentElement.querySelector("#newFolderName").value;
+                                    const successfulAdd = await add_folder({folder_path: newFolderPath});
+                                    if (successfulAdd) {
+                                        addFolderItem(templateItem, newFolderPath);
+                                        switchPath(currentPath);
+                                    }
+                                };
+
+                                // Add and remove collections to/from folder
+                                const ApplyCollectionSelection = async (e) => {
+                                    console.log("[steam-collections-plus] DEBUG OUTPUT:");
+                                    console.log("currentPath:", currentPath);
+                                    
+                                    const allCheckboxes = e.target.parentElement.querySelectorAll("input[type=checkbox]");
+                                    for (let i = 0; i < allCheckboxes.length; i++) {
+                                        const collID = allCheckboxes[i].dataset.collectionid;
+                                        if (!allCheckboxes[i].checked && allCheckboxes[i].dataset.incurrentfolder === "true") {
+                                            // Remove collection from current folder
+                                            console.log(`Removing ${collID} from`, currentPath);
+                                            await set_folder({coll_id: collID, folder_path: "root"});
+                                            collGrid.querySelector(`:scope > div[data-collectionid="${collID}"]`).dataset.itempath = "root";
+                                        } else if (allCheckboxes[i].checked && allCheckboxes[i].dataset.incurrentfolder === "false") {
+                                            // Add collection to current folder
+                                            console.log(`Moving ${collID} to`, currentPath);
+                                            await set_folder({coll_id: collID, folder_path: currentPath});
+                                            collGrid.querySelector(`:scope > div[data-collectionid="${collID}"]`).dataset.itempath = currentPath;
+                                        }
+                                    }
+                                    
+                                    switchPath(currentPath);
+                                };
+
+                                useEffect(() => {
+                                    GetCurrentSettings();
+                                }, []);
+
+                                return (
+                                    <ModalRoot closeModal={() => {}}>
+                                        <span style={{textTransform: "uppercase"}}><b>{managedFolderName}</b></span> <br />
+                                        <br />
+                                        Create subfolder: <br />
+                                        <TextField id="newFolderName" placeholder="Folder"></TextField>
+                                        <DialogButton style={{width: "120px"}} onClick={AddNewFolder}>Add</DialogButton>
+                                        <hr />
+                                        Add collections: <br />
+                                        {collectionStateList.map((collectionData, index) => {
+                                            return (
+                                                <div>
+                                                    <input key={index} id={`coll-chkbox-${index}`} data-collectionid={collectionData.collectionID} data-incurrentfolder={collectionData.collectionFolder === currentPath} type="checkbox" defaultChecked={collectionData.collectionFolder === currentPath} />
+                                                    <label for={`coll-chkbox-${index}`}>{collectionData.collectionName} (Currently in {collectionData.collectionFolder})</label>
+                                                </div>
+                                            );
+                                        })}
+                                        <DialogButton style={{width: "120px"}} onClick={ApplyCollectionSelection}>Apply</DialogButton>
+                                    </ModalRoot>
+                                );
+                            };
+
+                            showModal(
+                                <FolderManagementComponent key={currentPath} />,
+                                popup.m_popup.window, {strTitle: "Folder Management", bHideMainWindowForPopouts: false, bForcePopOut: true, popupHeight: 700, popupWidth: 400}
+                            );
                         });
                     }
 

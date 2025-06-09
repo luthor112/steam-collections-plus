@@ -115,8 +115,11 @@ def db_add_folder(folder_path):
     if "__folderlist" not in coll_db:
         coll_db["__folderlist"] = []
 
-    coll_db["__folderlist"].append(folder_path)
-    save_coll_db()
+    if folder_path not in coll_db["__folderlist"]:
+        coll_db["__folderlist"].append(folder_path)
+        save_coll_db()
+        return True
+    return False
 
 def db_remove_folder(folder_path):
     global coll_db
@@ -192,8 +195,7 @@ class Backend:
     @staticmethod
     def add_folder(folder_path):
         logger.log(f"add_folder() called with path {folder_path}")
-        db_add_folder(folder_path)
-        return True
+        return db_add_folder(folder_path)
 
     @staticmethod
     def remove_folder(folder_path):
