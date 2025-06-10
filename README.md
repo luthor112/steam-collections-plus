@@ -32,6 +32,10 @@ A Millennium plugin that adds extra functionality to collections on Steam.
 ## Collection Folders
 - On your Collections page, click `[UP]` to leave a folder,
 - Click `[C+]` to open a windows where you can create subfolders and add (or remove) collections to (from) the current folder,
+- They look like this, on the Collections page, with the default theme:
+
+![Collection buttons](screenshots/coll-buttons.png)
+
 - Right click a folder and choose `Delete folder` to delete a folder and ALL of its subfolders
     - All contained collections will be moved out to the Root folder
 - On an application page, click the `Co` button to open the new Collections window
