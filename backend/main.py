@@ -117,6 +117,7 @@ def db_add_folder(folder_path):
 
     if folder_path not in coll_db["__folderlist"]:
         coll_db["__folderlist"].append(folder_path)
+        coll_db["__folderlist"].sort()
         save_coll_db()
         return True
     return False

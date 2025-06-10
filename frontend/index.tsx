@@ -139,7 +139,7 @@ async function OnPopupCreation(popup: any) {
                             );
                         });
                     };
-                    
+
                     const templateItem = collGrid.querySelector(`:scope > div.${findModule(e => e.NewCollection).NewCollection}`);
                     templateItem.dataset.itempath = "root";
                     for (let i = 0; i < folderList.length; i++) {
@@ -211,20 +211,19 @@ async function OnPopupCreation(popup: any) {
 
                                 // Add and remove collections to/from folder
                                 const ApplyCollectionSelection = async (e) => {
-                                    console.log("[steam-collections-plus] DEBUG OUTPUT:");
-                                    console.log("currentPath:", currentPath);
+                                    console.log("[steam-collections-plus] Applying selection...");
                                     
                                     const allCheckboxes = e.target.parentElement.querySelectorAll("input[type=checkbox]");
                                     for (let i = 0; i < allCheckboxes.length; i++) {
                                         const collID = allCheckboxes[i].dataset.collectionid;
                                         if (!allCheckboxes[i].checked && allCheckboxes[i].dataset.incurrentfolder === "true") {
                                             // Remove collection from current folder
-                                            console.log(`Removing ${collID} from`, currentPath);
+                                            console.log(`[steam-collections-plus] Removing ${collID} from`, currentPath);
                                             await set_folder({coll_id: collID, folder_path: "root"});
                                             collGrid.querySelector(`:scope > div[data-collectionid="${collID}"]`).dataset.itempath = "root";
                                         } else if (allCheckboxes[i].checked && allCheckboxes[i].dataset.incurrentfolder === "false") {
                                             // Add collection to current folder
-                                            console.log(`Moving ${collID} to`, currentPath);
+                                            console.log(`[steam-collections-plus] Moving ${collID} to`, currentPath);
                                             await set_folder({coll_id: collID, folder_path: currentPath});
                                             collGrid.querySelector(`:scope > div[data-collectionid="${collID}"]`).dataset.itempath = currentPath;
                                         }
@@ -455,7 +454,7 @@ async function OnPopupCreation(popup: any) {
                                 }
                             });
                         }
-                        
+
                         showContextMenu(
                             <Menu label="Collections+ Options">
                                 <MenuItem onClick={async () => {
@@ -505,6 +504,127 @@ async function OnPopupCreation(popup: any) {
                             </Menu>,
                             cPlusButton,
                             { bForcePopup: true }
+                        );
+                    });
+                }
+            } else if (MainWindowBrowserManager.m_lastLocation.pathname.startsWith("/library/app/")) {
+                const gameSettingsButton = await WaitForElement(`div.${findModule(e => e.InPage).InPage} div.${findModule(e => e.AppButtonsContainer).AppButtonsContainer} > div.${findModule(e => e.MenuButtonContainer).MenuButtonContainer}:not([role="button"])`, popup.m_popup.document);
+                const oldCPlusButton = gameSettingsButton.parentNode.querySelector('div.coll-plus-app-button');
+                if (!oldCPlusButton) {
+                    const cPlusButton = gameSettingsButton.cloneNode(true);
+                    cPlusButton.classList.add("coll-plus-app-button");
+                    cPlusButton.firstChild.innerHTML = "Co";
+                    gameSettingsButton.parentNode.insertBefore(cPlusButton, gameSettingsButton.nextSibling);
+
+                    cPlusButton.addEventListener("click", async () => {
+                        const CollectionManagementComponent: React.FC = (props) => {
+                            const treeStyle: React.CSSProperties = {
+                                '--spacing': '1.5rem',
+                                '--radius': '10px'
+                            };
+
+                            const liStyle: React.CSSProperties = {
+                                display: 'block',
+                                position: 'relative',
+                                paddingLeft: 'calc(2 * var(--spacing) - var(--radius) - 2px)'
+                            };
+
+                            const ulStyle: React.CSSProperties = {
+                                marginLeft: 'calc(var(--radius) - var(--spacing))',
+                                paddingLeft: '0'
+                            };
+
+                            const [managedAppName, setManagedAppName] = useState<string>("");
+                            const [folderList, setFolderList] = useState([]);
+                            const [collectionStateList, setCollectionStateList] = useState([]);
+
+                            // Get current data
+                            const GetCurrentSettings = async () => {
+                                const currentApp = appStore.allApps.find((x) => x.appid === uiStore.currentGameListSelection.nAppId);
+                                setManagedAppName(currentApp.display_name);
+
+                                
+                                setFolderList(["root"].concat(JSON.parse(await get_folder_list({}))));
+
+                                let wipStateList = [];
+                                const latestFolderMap = JSON.parse(await get_folder_map({}));
+                                for (let i = 0; i < collectionStore.userCollections.length; i++) {
+                                    const currentCollID = collectionStore.userCollections[i].m_strId;
+                                    if (currentCollID !== "uncategorized") {
+                                        const currentCollName = collectionStore.userCollections[i].m_strName;
+                                        let currentCollFolder = "root";
+                                        if (currentCollID in latestFolderMap) {
+                                            currentCollFolder = latestFolderMap[currentCollID];
+                                        }
+                                        let currentCollContainsApp = false;
+                                        if (collectionStore.userCollections[i].allApps.find((x) => x.appid === uiStore.currentGameListSelection.nAppId)) {
+                                            currentCollContainsApp = true;
+                                        }
+                                        wipStateList.push({collectionID: currentCollID, collectionName: currentCollName, collectionFolder: currentCollFolder, appInColl: currentCollContainsApp});
+                                    }
+                                }
+                                setCollectionStateList(wipStateList);
+                            };
+
+                            // Add and remove collections to/from folder
+                            const ApplyCollectionSelection = async (e) => {
+                                console.log("[steam-collections-plus] Applying selection...");
+
+                                const allCheckboxes = e.target.parentElement.querySelectorAll("input[type=checkbox]");
+                                for (let i = 0; i < allCheckboxes.length; i++) {
+                                    const collID = allCheckboxes[i].dataset.collectionid;
+                                    if (!allCheckboxes[i].checked && allCheckboxes[i].dataset.incollection === "true") {
+                                        // Remove app from collection
+                                        console.log("[steam-collections-plus] Removing app from", collID);
+                                        collectionStore.AddOrRemoveApp([uiStore.currentGameListSelection.nAppId], false, collID);
+                                        allCheckboxes[i].dataset.incollection = "false";
+                                    } else if (allCheckboxes[i].checked && allCheckboxes[i].dataset.incollection === "false") {
+                                        // Add app to collection
+                                        console.log("[steam-collections-plus] Adding app to", collID);
+                                        collectionStore.AddOrRemoveApp([uiStore.currentGameListSelection.nAppId], true, collID);
+                                        allCheckboxes[i].dataset.incollection = "true";
+                                    }
+                                }
+                            }
+
+                            useEffect(() => {
+                                GetCurrentSettings();
+                            }, []);
+
+                            return (
+                                <ModalRoot closeModal={() => {}}>
+                                    <span style={{textTransform: "uppercase"}}><b>{managedAppName}</b></span> <br />
+                                    <br />
+                                    Collections: <br />
+                                    <ul style={treeStyle}>
+                                        {folderList.map((folderPath, index) => {
+                                            return (
+                                                <li style={liStyle}>
+                                                    <details open>
+                                                        <summary>{folderPath.replaceAll("/", " ≫ ")}</summary>
+                                                        <ul style={ulStyle}>
+                                                            {collectionStateList.filter((x) => x.collectionFolder === folderPath).map((collectionData, index) => {
+                                                                return (
+                                                                    <li style={liStyle}>
+                                                                        <input key={collectionData.collectionID} id={`coll-chkbox-${collectionData.collectionID}`} data-collectionid={collectionData.collectionID} data-incollection={collectionData.appInColl} type="checkbox" defaultChecked={collectionData.appInColl} />
+                                                                        <label for={`coll-chkbox-${collectionData.collectionID}`}>{collectionData.collectionName}</label>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    </details>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                    <DialogButton style={{width: "120px"}} onClick={ApplyCollectionSelection}>Apply</DialogButton>
+                                </ModalRoot>
+                            );
+                        };
+
+                        showModal(
+                            <CollectionManagementComponent key={uiStore.currentGameListSelection.nAppId} />,
+                            popup.m_popup.window, {strTitle: "Collections", bHideMainWindowForPopouts: false, bForcePopOut: true, popupHeight: 700, popupWidth: 500}
                         );
                     });
                 }
