@@ -513,7 +513,7 @@ async function OnPopupCreation(popup: any) {
                 if (!oldCPlusButton) {
                     const cPlusButton = gameSettingsButton.cloneNode(true);
                     cPlusButton.classList.add("coll-plus-app-button");
-                    cPlusButton.firstChild.innerHTML = "Co";
+                    cPlusButton.firstChild.innerHTML = "C+";
                     gameSettingsButton.parentNode.insertBefore(cPlusButton, gameSettingsButton.nextSibling);
 
                     cPlusButton.addEventListener("click", async () => {
