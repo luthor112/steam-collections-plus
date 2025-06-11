@@ -63,30 +63,34 @@ async function OnPopupCreation(popup: any) {
                     };
 
                     // Tag all collections on the UI with an itempath
-                    const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
-                    for (let i = 0; i < collItemList.length; i++) {
-                        const collName = collItemList[i].querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.${findModule(e => e.CollectionLabelCount).CollectionLabelCount})`).textContent;
-                        console.log("[steam-collections-plus] Processing collection", collName);
+                    const tagCollectionItems = async () => {
+                        const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
+                        for (let i = 0; i < collItemList.length; i++) {
+                            const collName = collItemList[i].querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.${findModule(e => e.CollectionLabelCount).CollectionLabelCount})`).textContent;
+                            console.log("[steam-collections-plus] Processing collection", collName);
 
-                        var collID = "type-music";
-                        const collObj = collectionStore.GetUserCollectionsByName(collName);
-                        if (collObj.length > 0) {
-                            collID = collObj[0].m_strId;
-                        }
+                            var collID = "type-music";
+                            const collObj = collectionStore.GetUserCollectionsByName(collName);
+                            if (collObj.length > 0) {
+                                collID = collObj[0].m_strId;
+                            }
 
-                        const imageData = await get_coll_image({ coll_id: collID });
-                        if (imageData !== "") {
-                            collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
-                            collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
-                        }
+                            const imageData = await get_coll_image({ coll_id: collID });
+                            if (imageData !== "") {
+                                collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
+                                collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
+                            }
 
-                        collItemList[i].dataset.collectionid = collID;
-                        if (collID in folderMap) {
-                            collItemList[i].dataset.itempath = folderMap[collID];
-                        } else {
-                            collItemList[i].dataset.itempath = "root";
+                            collItemList[i].dataset.collectionid = collID;
+                            if (collID in folderMap) {
+                                collItemList[i].dataset.itempath = folderMap[collID];
+                            } else {
+                                collItemList[i].dataset.itempath = "root";
+                            }
                         }
-                    }
+                    };
+
+                    await tagCollectionItems();
 
                     // Add folder items to the UI, incl. itempath
                     const addFolderItem = async (templateItem, folderFullPath) => {
@@ -265,6 +269,12 @@ async function OnPopupCreation(popup: any) {
                         });
                     }
 
+                    const collListObserver = new MutationObserver(async (mutationList, observer) => {
+                        await tagCollectionItems();
+                        switchPath(currentPath);
+                    });
+                    collListObserver.observe(collGrid, { childList: true });
+
                     switchPath("root");
                 }
             } else if (MainWindowBrowserManager.m_lastLocation.pathname.startsWith("/library/collection/")) {
@@ -272,7 +282,7 @@ async function OnPopupCreation(popup: any) {
                 const oldCPlusButton = collOptionsDiv.querySelector('button.collectionsplus-button');
                 if (!oldCPlusButton) {
                     const cPlusButton = popup.m_popup.document.createElement("div");
-                    render(<DialogButton className="collectionsplus-button" style={{width: "40px"}}>C+</DialogButton>, cPlusButton);
+                    render(<DialogButton className="collectionsplus-button" style={{width: "40px", marginRight: "3px"}}>C+</DialogButton>, cPlusButton);
                     collOptionsDiv.insertBefore(cPlusButton, collOptionsDiv.firstChild.nextSibling);
 
                     cPlusButton.addEventListener("click", async () => {
