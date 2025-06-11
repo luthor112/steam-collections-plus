@@ -535,12 +535,13 @@ async function OnPopupCreation(popup: any) {
                                 <MenuItem onClick={async () => {
                                     const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
                                     const randomIndex = Math.floor(Math.random() * (currentColl.allApps.length + 1));
-                                    const gameName = currentColl.allApps[randomIndex].display_name;
+                                    /*const gameName = currentColl.allApps[randomIndex].display_name;
                                     const gameListItemList = await WaitForElementList('div.ReactVirtualized__Grid__innerScrollContainer > div.Panel > div > div.Focusable', popup.m_popup.document);
                                     const gameItem = gameListItemList.find(el => el.textContent === gameName);
                                     if (gameItem) {
                                         gameItem.click();
-                                    }
+                                    }*/
+                                    window.open(`steam://nav/games/details/${currentColl.allApps[randomIndex].appid.toString()}`, "_blank");
                                 }}> Show random application </MenuItem>
                             </Menu>,
                             cPlusButton,
