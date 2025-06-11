@@ -276,7 +276,7 @@ async function OnPopupCreation(popup: any) {
                     collOptionsDiv.insertBefore(cPlusButton, collOptionsDiv.firstChild.nextSibling);
 
                     cPlusButton.addEventListener("click", async () => {
-                        async function showBulkUI(addMode) {
+                        async function showBulkUI(addMode, filterOnly) {
                             const cPlusFilterBox = popup.m_popup.document.createElement("div");
                             render(<TextField  placeholder="filter"></TextField>, cPlusFilterBox);
                             collOptionsDiv.insertBefore(cPlusFilterBox, cPlusButton.nextSibling);
@@ -284,7 +284,9 @@ async function OnPopupCreation(popup: any) {
                             render(<DialogButton style={{width: "40px"}}>OK</DialogButton>, cPlusFilterOK);
                             collOptionsDiv.insertBefore(cPlusFilterOK, cPlusFilterBox.nextSibling);
 
-                            if (addMode) {
+                            if (filterOnly) {
+                                cPlusFilterBox.querySelector("input").value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "filter" });
+                            } else if (addMode) {
                                 cPlusFilterBox.querySelector("input").value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add" });
                             } else {
                                 cPlusFilterBox.querySelector("input").value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove" });
@@ -296,7 +298,9 @@ async function OnPopupCreation(popup: any) {
                                 cPlusFilterOK.firstChild.innerHTML = "Working...";
 
                                 var checkedList = undefined;
-                                if (addMode) {
+                                if (filterOnly) {
+                                    checkedList = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId).allApps;
+                                } else if (addMode) {
                                     checkedList = collectionStore.allAppsCollection.allApps;
                                 } else {
                                     checkedList = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId).allApps;
@@ -437,7 +441,16 @@ async function OnPopupCreation(popup: any) {
                                         }
                                     }
 
-                                    if (allTrue) {
+                                    if (filterOnly) {
+                                        let applicationElement = popup.m_popup.document.querySelector(`div.${findModule(e => e.CSSGrid).CSSGrid} > div > div > div > img[alt="${currentApp.display_name}"]`);
+                                        if (applicationElement && allTrue) {
+                                            applicationElement.parentElement.parentElement.parentElement.style.display = "";
+                                        } else if (applicationElement && !allTrue) {
+                                            applicationElement.parentElement.parentElement.parentElement.style.display = "none";
+                                        } else {
+                                            console.log("[steam-collections-plus] Cannot find element for", currentApp.display_name);
+                                        }
+                                    } else if (allTrue) {
                                         console.log("[steam-collections-plus] Found", currentApp.display_name);
                                         collectionStore.AddOrRemoveApp([currentApp.appid], addMode, uiStore.currentGameListSelection.strCollectionId);
                                     }
@@ -445,7 +458,10 @@ async function OnPopupCreation(popup: any) {
 
                                 cPlusFilterOK.remove();
                                 cPlusFilterBox.remove();
-                                if (addMode) {
+                                if (filterOnly) {
+                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "filter", op_data: cPlusFilterValue });
+                                    console.log("[steam-collections-plus] Applications filtered in", uiStore.currentGameListSelection.strCollectionId);
+                                } else if (addMode) {
                                     await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add", op_data: cPlusFilterValue });
                                     console.log("[steam-collections-plus] Applications added to", uiStore.currentGameListSelection.strCollectionId);
                                 } else {
@@ -458,12 +474,16 @@ async function OnPopupCreation(popup: any) {
                         showContextMenu(
                             <Menu label="Collections+ Options">
                                 <MenuItem onClick={async () => {
-                                    showBulkUI(true);
+                                    showBulkUI(true, false);
                                 }}> Add applications in bulk </MenuItem>
 
                                 <MenuItem onClick={async () => {
-                                    showBulkUI(false);
+                                    showBulkUI(false, false);
                                 }}> Remove applications in bulk </MenuItem>
+
+                                <MenuItem onClick={async () => {
+                                    showBulkUI(false, true);
+                                }}> Filter applications </MenuItem>
 
                                 <MenuItem onClick={async () => {
                                     const inputFileElement = popup.m_popup.document.createElement("input");
