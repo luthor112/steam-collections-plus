@@ -521,6 +521,17 @@ async function OnPopupCreation(popup: any) {
                                     const randomIndex = Math.floor(Math.random() * (currentColl.allApps.length + 1));
                                     SteamClient.Apps.RunGame(currentColl.allApps[randomIndex].appid.toString(), "", 0, 0);
                                 }}> Start random application </MenuItem>
+
+                                <MenuItem onClick={async () => {
+                                    const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
+                                    const randomIndex = Math.floor(Math.random() * (currentColl.allApps.length + 1));
+                                    const gameName = currentColl.allApps[randomIndex].display_name;
+                                    const gameListItemList = await WaitForElementList('div.ReactVirtualized__Grid__innerScrollContainer > div.Panel > div > div.Focusable', popup.m_popup.document);
+                                    const gameItem = gameListItemList.find(el => el.textContent === gameName);
+                                    if (gameItem) {
+                                        gameItem.click();
+                                    }
+                                }}> Show random application </MenuItem>
                             </Menu>,
                             cPlusButton,
                             { bForcePopup: true }
