@@ -308,12 +308,25 @@ async function OnPopupCreation(popup: any) {
                                 cPlusFilterOK.firstChild.innerHTML = "Working...";
 
                                 var checkedList = undefined;
+                                var modifiedList = undefined;
                                 if (filterOnly) {
                                     checkedList = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId).allApps;
                                 } else if (addMode) {
                                     checkedList = collectionStore.allAppsCollection.allApps;
                                 } else {
                                     checkedList = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId).allApps;
+                                }
+
+                                if (filterOnly) {
+                                    if (collectionStore.GetUserCollectionsByName("filtered").length === 1) {
+                                        const oldFilteredColl = collectionStore.GetUserCollectionsByName("filtered")[0];
+                                        oldFilteredColl.Delete();
+                                    }
+                                    const newFilterColl = collectionStore.NewUnsavedCollection("filtered", undefined, []);
+                                    await newFilterColl.Save();
+                                    modifiedList = newFilterColl.m_strId;
+                                } else {
+                                    modifiedList = uiStore.currentGameListSelection.strCollectionId;
                                 }
 
                                 const checkedFilterCollection = cPlusFilterValue.split(";");
@@ -451,18 +464,9 @@ async function OnPopupCreation(popup: any) {
                                         }
                                     }
 
-                                    if (filterOnly) {
-                                        let applicationElement = popup.m_popup.document.querySelector(`div.${findModule(e => e.CSSGrid).CSSGrid} > div > div > div > img[alt="${currentApp.display_name}"]`);
-                                        if (applicationElement && allTrue) {
-                                            applicationElement.parentElement.parentElement.parentElement.style.display = "";
-                                        } else if (applicationElement && !allTrue) {
-                                            applicationElement.parentElement.parentElement.parentElement.style.display = "none";
-                                        } else {
-                                            console.log("[steam-collections-plus] Cannot find element for", currentApp.display_name);
-                                        }
-                                    } else if (allTrue) {
+                                    if (allTrue) {
                                         console.log("[steam-collections-plus] Found", currentApp.display_name);
-                                        collectionStore.AddOrRemoveApp([currentApp.appid], addMode, uiStore.currentGameListSelection.strCollectionId);
+                                        collectionStore.AddOrRemoveApp([currentApp.appid], addMode, modifiedList);
                                     }
                                 }
 
@@ -492,7 +496,7 @@ async function OnPopupCreation(popup: any) {
                                 }}> Remove applications in bulk </MenuItem>
 
                                 <MenuItem onClick={async () => {
-                                    showBulkUI(false, true);
+                                    showBulkUI(true, true);
                                 }}> Filter applications </MenuItem>
 
                                 <MenuItem onClick={async () => {
