@@ -45,4 +45,5 @@ A Millennium plugin that adds extra functionality to collections on Steam.
     - If you know how to remove the tint, feel free to open a PR
 - Text-based filtering instead of a full-fledged UI
     - Yeah...
-- Resizing or moving Steam between screens can mess up the Collections view on some machines
+- Steam dynamically loads and unloads elements on scroll, which can break Collection Folders and Collection filtering functionality
+    - If you know how to force Steam to not do this, please open a PR

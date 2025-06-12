@@ -282,7 +282,7 @@ async function OnPopupCreation(popup: any) {
                 const oldCPlusButton = collOptionsDiv.querySelector('button.collectionsplus-button');
                 if (!oldCPlusButton) {
                     const cPlusButton = popup.m_popup.document.createElement("div");
-                    render(<DialogButton className="collectionsplus-button" style={{width: "40px", marginRight: "3px"}}>C+</DialogButton>, cPlusButton);
+                    render(<DialogButton className="collectionsplus-button" style={{width: "40px", marginLeft: "3px", marginRight: "3px"}}>C+</DialogButton>, cPlusButton);
                     collOptionsDiv.insertBefore(cPlusButton, collOptionsDiv.firstChild.nextSibling);
 
                     cPlusButton.addEventListener("click", async () => {
@@ -535,12 +535,6 @@ async function OnPopupCreation(popup: any) {
                                 <MenuItem onClick={async () => {
                                     const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
                                     const randomIndex = Math.floor(Math.random() * (currentColl.allApps.length + 1));
-                                    /*const gameName = currentColl.allApps[randomIndex].display_name;
-                                    const gameListItemList = await WaitForElementList('div.ReactVirtualized__Grid__innerScrollContainer > div.Panel > div > div.Focusable', popup.m_popup.document);
-                                    const gameItem = gameListItemList.find(el => el.textContent === gameName);
-                                    if (gameItem) {
-                                        gameItem.click();
-                                    }*/
                                     window.open(`steam://nav/games/details/${currentColl.allApps[randomIndex].appid.toString()}`, "_blank");
                                 }}> Show random application </MenuItem>
                             </Menu>,
