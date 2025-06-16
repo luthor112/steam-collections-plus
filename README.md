@@ -46,5 +46,4 @@ Big thanks to OsuCelsius!
 - Folder images might not work on some themes, including Simple Dark and Minimal Dark
 - Text-based filtering instead of a full-fledged UI
     - Yeah...
-- Steam dynamically loads and unloads elements on scroll, which can break Collection Folders and Collection filtering functionality
-    - If you know how to force Steam to not do this, please open a PR
+- Collection preview as Collection image does not work if any Folders are used
