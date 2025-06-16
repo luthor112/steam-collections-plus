@@ -5,6 +5,8 @@ import React, { useState, useEffect } from "react";
 // Backend functions
 const get_coll_image = callable<[{ coll_id: string }], string>('Backend.get_coll_image');
 const set_coll_image = callable<[{ coll_id: string, image_data: string }], boolean>('Backend.set_coll_image');
+const get_folder_image = callable<[{ folder_path: string }], string>('Backend.get_folder_image');
+const set_folder_image = callable<[{ folder_path: string, image_data: string }], boolean>('Backend.set_folder_image');
 const get_last_filter = callable<[{ coll_id: string, op_type: string }], string>('Backend.get_last_filter');
 const set_last_filter = callable<[{ coll_id: string, op_type: string, op_data: string }], boolean>('Backend.set_last_filter');
 const get_folder = callable<[{ coll_id: string }], string>('Backend.get_folder');
@@ -103,6 +105,12 @@ async function OnPopupCreation(popup: any) {
                         folderItem.dataset.itempath = folderPath;
                         collGrid.insertBefore(folderItem, templateItem.nextSibling);
 
+                        const imageData = await get_folder_image({ folder_path: folderFullPath });
+                        if (imageData !== "") {
+                            folderItem.style.backgroundImage = `url(${imageData})`;
+                            folderItem.style.backgroundSize = "cover";
+                        }
+
                         folderItem.addEventListener("click", async () => {
                             // Enter folder on click
                             const newPath = folderFullPath;
@@ -137,6 +145,42 @@ async function OnPopupCreation(popup: any) {
                                         // Show moved collections if we are in root
                                         switchPath(currentPath);
                                     }}> Delete folder </MenuItem>
+
+                                    <MenuItem onClick={async () => {
+                                        const inputFileElement = popup.m_popup.document.createElement("input");
+                                        inputFileElement.type = "file";
+                                        inputFileElement.style.display = "none";
+                                        inputFileElement.addEventListener('change', (e) => {
+                                            if (e.target.files) {
+                                                console.log(e.target.files[0]);
+                                                const imageFile = e.target.files[0];
+                                                if (imageFile) {
+                                                    const reader = new FileReader();
+                                                    reader.onload = async (f) => {
+                                                        const imageData = reader.result;
+                                                        await set_folder_image({ folder_path: folderFullPath, image_data: imageData });
+
+                                                        folderItem.style.backgroundImage = `url(${imageData})`;
+                                                        folderItem.style.backgroundSize = "cover";
+
+                                                        console.log("[steam-collections-plus] Image set for", folderFullPath);
+                                                    };
+                                                    reader.readAsDataURL(imageFile);
+                                                }
+                                            }
+                                            inputFileElement.remove();
+                                        });
+                                        folderItem.appendChild(inputFileElement);
+                                        inputFileElement.click();
+                                    }}> Set folder image </MenuItem>
+
+                                    <MenuItem onClick={async () => {
+                                        await set_folder_image({ folder_path: folderFullPath, image_data: "" });
+
+                                        folderItem.style.backgroundImage = "";
+
+                                        console.log("[steam-collections-plus] Image reset for", folderFullPath);
+                                    }}> Reset folder image </MenuItem>
                                 </Menu>,
                                 folderItem.querySelector(`div.${findModule(e => e.BigPlus).BigPlus}`),
                                 { bForcePopup: true }
@@ -244,7 +288,7 @@ async function OnPopupCreation(popup: any) {
                                     <ModalRoot closeModal={() => {}}>
                                         <span style={{textTransform: "uppercase"}}><b>{managedFolderName}</b></span> <br />
                                         <br />
-                                        Create subfolder: <br />
+                                        Create subfolder (EXPERIMENTAL): <br />
                                         <TextField id="newFolderName" placeholder="Folder"></TextField>
                                         <DialogButton style={{width: "120px"}} onClick={AddNewFolder}>Add</DialogButton>
                                         <hr />
@@ -474,6 +518,7 @@ async function OnPopupCreation(popup: any) {
                                 cPlusFilterBox.remove();
                                 if (filterOnly) {
                                     await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "filter", op_data: cPlusFilterValue });
+                                    SteamUIStore.Navigate(`/library/collection/${modifiedList}`);
                                     console.log("[steam-collections-plus] Applications filtered in", uiStore.currentGameListSelection.strCollectionId);
                                 } else if (addMode) {
                                     await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add", op_data: cPlusFilterValue });
@@ -539,7 +584,7 @@ async function OnPopupCreation(popup: any) {
                                 <MenuItem onClick={async () => {
                                     const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
                                     const randomIndex = Math.floor(Math.random() * (currentColl.allApps.length + 1));
-                                    window.open(`steam://nav/games/details/${currentColl.allApps[randomIndex].appid.toString()}`, "_blank");
+                                    SteamUIStore.Navigate(`/library/app/${currentColl.allApps[randomIndex].appid.toString()}`);
                                 }}> Show random application </MenuItem>
                             </Menu>,
                             cPlusButton,

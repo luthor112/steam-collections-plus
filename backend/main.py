@@ -160,6 +160,17 @@ class Backend:
         return True
 
     @staticmethod
+    def get_folder_image(folder_path):
+        logger.log(f"get_folder_image() called for folder {folder_path}")
+        return db_get_image(f"__folder__{folder_path.replace('/', '__')}")
+
+    @staticmethod
+    def set_folder_image(folder_path, image_data):
+        logger.log(f"set_folder_image() called for folder {folder_path}")
+        db_save_image(f"__folder__{folder_path.replace('/', '__')}", image_data)
+        return True
+
+    @staticmethod
     def get_last_filter(coll_id, op_type):
         last_filter = db_get_last(coll_id, op_type)
         logger.log(f"get_last_filter({coll_id}, {op_type}) -> {last_filter}")
