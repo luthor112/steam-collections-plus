@@ -40,10 +40,14 @@ Big thanks to OsuCelsius!
 
 - Right click a folder and choose `Delete folder` to delete a folder and ALL of its subfolders
     - All contained collections will be moved out to the Root folder
-- On an application page, click the `Co` button to open the new Collections window
+- Right click a folder and choose `Set folder image` or `Reset folder image` to set/unset an image for the folder
+
+## Colletion Management for Applications
+- On an application page, click the `C+` button to open the new Collections window
 
 ## Known issues
+- Collection preview as Collection image does not work if any Folders are used
+    - This is a workaround because of the way Steam loads lists
 - Folder images might not work on some themes, including Simple Dark and Minimal Dark
 - Text-based filtering instead of a full-fledged UI
     - Yeah...
-- Collection preview as Collection image does not work if any Folders are used

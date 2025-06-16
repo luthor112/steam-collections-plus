@@ -89,6 +89,7 @@ async function OnPopupCreation(popup: any) {
                                 collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
                                 collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
                                 collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundSize = "cover";
+                                collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundPosition = "center";
                                 const tintElement = collItemList[i].querySelector(`div.${findModule(e => e.BackgroundImage).BackgroundImage}`);
                                 if (tintElement) {
                                     tintElement.remove();
@@ -116,6 +117,7 @@ async function OnPopupCreation(popup: any) {
                         if (imageData !== "") {
                             newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
                             newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundSize = "cover";
+                            newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundPosition = "center";
                         }
 
                         newCollItem.dataset.collectionid = currentCollId;
@@ -168,6 +170,7 @@ async function OnPopupCreation(popup: any) {
                         if (imageData !== "") {
                             folderItem.style.backgroundImage = `url(${imageData})`;
                             folderItem.style.backgroundSize = "cover";
+                            folderItem.style.backgroundPosition = "center";
                         }
 
                         folderItem.addEventListener("click", async () => {
@@ -221,6 +224,7 @@ async function OnPopupCreation(popup: any) {
 
                                                         folderItem.style.backgroundImage = `url(${imageData})`;
                                                         folderItem.style.backgroundSize = "cover";
+                                                        folderItem.style.backgroundPosition = "center";
 
                                                         console.log("[steam-collections-plus] Image set for", folderFullPath);
                                                     };
