@@ -48,7 +48,7 @@ async function OnPopupCreation(popup: any) {
 
                     // Switch folder
                     const switchPath = async (newPath) => {
-                        const allItemsList = collGrid.querySelectorAll(":scope > div");
+                        const allItemsList = collGrid.querySelectorAll(":scope > div[data-itempath]");
                         for (let i = 0; i < allItemsList.length; i++) {
                             if (allItemsList[i].dataset.itempath === newPath) {
                                 allItemsList[i].style.display = "";
@@ -63,6 +63,13 @@ async function OnPopupCreation(popup: any) {
 
                         currentPath = newPath;
                     };
+
+                    if (folderList.length > 0) {
+                        const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
+                        for (let i = 0; i < collItemList.length; i++) {
+                            collItemList[i].style.display = "none";
+                        }
+                    }
 
                     // Tag all collections on the UI with an itempath
                     const tagCollectionItems = async () => {
@@ -81,7 +88,11 @@ async function OnPopupCreation(popup: any) {
                             if (imageData !== "") {
                                 collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
                                 collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
-                                collItemList[i].querySelector(`div.${findModule(e => e.BackgroundImage).BackgroundImage}`).remove();
+                                collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundSize = "cover";
+                                const tintElement = collItemList[i].querySelector(`div.${findModule(e => e.BackgroundImage).BackgroundImage}`);
+                                if (tintElement) {
+                                    tintElement.remove();
+                                }
                             }
 
                             collItemList[i].dataset.collectionid = collID;
@@ -92,8 +103,55 @@ async function OnPopupCreation(popup: any) {
                             }
                         }
                     };
+                    
+                    // Add Collection items to the UI, incl. itempath
+                    const addCollectionItem = async (templateCollection, currentCollId, currentCollName, currentCollContains) => {
+                        console.log("[steam-collections-plus] Processing collection", currentCollName);
 
-                    await tagCollectionItems();
+                        const newCollItem = templateCollection.cloneNode(true);
+                        newCollItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.${findModule(e => e.CollectionLabelCount).CollectionLabelCount})`).textContent = currentCollName;
+                        newCollItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div.${findModule(e => e.CollectionLabelCount).CollectionLabelCount}`).textContent = currentCollContains;
+
+                        const imageData = await get_coll_image({ coll_id: currentCollId });
+                        if (imageData !== "") {
+                            newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
+                            newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundSize = "cover";
+                        }
+
+                        newCollItem.dataset.collectionid = currentCollId;
+                        if (currentCollId in folderMap) {
+                            newCollItem.dataset.itempath = folderMap[currentCollId];
+                        } else {
+                            newCollItem.dataset.itempath = "root";
+                        }
+                        collGrid.appendChild(newCollItem);
+
+                        newCollItem.addEventListener("click", async () => {
+                            SteamUIStore.Navigate(`/library/collection/${currentCollId}`);
+                        });
+                    };
+
+                    if (folderList.length > 0) {
+                        const existingCollection = collGrid.querySelector(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
+                        const templateCollection = existingCollection.cloneNode(true);
+                        const templateTint = templateCollection.querySelector(`div.${findModule(e => e.BackgroundImage).BackgroundImage}`);
+                        if (templateTint) {
+                            templateTint.remove();
+                        }
+                        const templatePreview = templateCollection.querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`);
+                        if (templatePreview) {
+                            templatePreview.remove();
+                        }
+                        
+                        for (let i = 0; i < collectionStore.userCollections.length; i++) {
+                            const currentCollId = collectionStore.userCollections[i].m_strId;
+                            const currentCollName = collectionStore.userCollections[i].m_strName;
+                            const currentCollContains = collectionStore.userCollections[i].allApps.length;
+                            await addCollectionItem(templateCollection, currentCollId, currentCollName, currentCollContains);
+                        }
+                    } else {
+                        await tagCollectionItems();
+                    }
 
                     // Add folder items to the UI, incl. itempath
                     const addFolderItem = async (templateItem, folderFullPath) => {
@@ -315,8 +373,16 @@ async function OnPopupCreation(popup: any) {
                     }
 
                     const collListObserver = new MutationObserver(async (mutationList, observer) => {
-                        await tagCollectionItems();
-                        switchPath(currentPath);
+                        if (folderList.length > 0) {
+                            for (const record of mutationList) {
+                                for (const addedNode of record.addedNodes) {
+                                    addedNode.style.display = "none";
+                                }
+                            }
+                        } else {
+                            await tagCollectionItems();
+                            switchPath(currentPath);
+                        }
                     });
                     collListObserver.observe(collGrid, { childList: true });
 

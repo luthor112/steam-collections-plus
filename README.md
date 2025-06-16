@@ -43,8 +43,7 @@ Big thanks to OsuCelsius!
 - On an application page, click the `Co` button to open the new Collections window
 
 ## Known issues
-- Collection images are tinted
-    - If you know how to remove the tint, feel free to open a PR
+- Folder images might not work on some themes, including Simple Dark and Minimal Dark
 - Text-based filtering instead of a full-fledged UI
     - Yeah...
 - Steam dynamically loads and unloads elements on scroll, which can break Collection Folders and Collection filtering functionality
