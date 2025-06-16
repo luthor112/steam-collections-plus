@@ -81,6 +81,7 @@ async function OnPopupCreation(popup: any) {
                             if (imageData !== "") {
                                 collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
                                 collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
+                                collItemList[i].querySelector(`div.${findModule(e => e.BackgroundImage).BackgroundImage}`).remove();
                             }
 
                             collItemList[i].dataset.collectionid = collID;

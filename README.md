@@ -7,6 +7,8 @@ A Millennium plugin that adds extra functionality to collections on Steam.
 - Add/remove applications to/from collections in bulk
 - Organize collections into folders
 
+Big thanks to OsuCelsius!
+
 ## Prerequisites
 - [Millennium](https://steambrew.app/)
 
