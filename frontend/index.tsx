@@ -791,6 +791,7 @@ async function OnPopupCreation(popup: any) {
 
 export default async function PluginMain() {
     console.log("[steam-collections-plus] Frontend startup");
+    await App.WaitForServicesInitialized();
 
     const doc = g_PopupManager.GetExistingPopup("SP Desktop_uid0");
 	if (doc) {
