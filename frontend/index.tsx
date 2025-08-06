@@ -65,7 +65,8 @@ async function OnPopupCreation(popup: any) {
                     };
 
                     if (folderList.length > 0) {
-                        const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
+                        //a
+                        const collItemList = collGrid.querySelectorAll(`:scope > div[role='row']`);
                         for (let i = 0; i < collItemList.length; i++) {
                             collItemList[i].style.display = "none";
                         }
@@ -73,7 +74,7 @@ async function OnPopupCreation(popup: any) {
 
                     // Tag all collections on the UI with an itempath
                     const tagCollectionItems = async () => {
-                        const collItemList = collGrid.querySelectorAll(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
+                        const collItemList = collGrid.querySelectorAll(`:scope > div > div > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
                         for (let i = 0; i < collItemList.length; i++) {
                             const collName = collItemList[i].querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.${findModule(e => e.CollectionLabelCount).CollectionLabelCount})`).textContent;
                             console.log("[steam-collections-plus] Processing collection", collName);
@@ -134,7 +135,7 @@ async function OnPopupCreation(popup: any) {
                     };
 
                     if (folderList.length > 0) {
-                        const existingCollection = collGrid.querySelector(`:scope > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
+                        const existingCollection = collGrid.querySelector(`:scope > div > div > div:not(.${findModule(e => e.NewCollection).NewCollection})`);
                         const templateCollection = existingCollection.cloneNode(true);
                         const templateTint = templateCollection.querySelector(`div.${findModule(e => e.BackgroundImage).BackgroundImage}`);
                         if (templateTint) {
@@ -251,7 +252,7 @@ async function OnPopupCreation(popup: any) {
                         });
                     };
 
-                    const templateItem = collGrid.querySelector(`:scope > div.${findModule(e => e.NewCollection).NewCollection}`);
+                    const templateItem = collGrid.querySelector(`:scope > div > div > div.${findModule(e => e.NewCollection).NewCollection}`);
                     templateItem.dataset.itempath = "root";
                     for (let i = 0; i < folderList.length; i++) {
                         const folderFullPath = folderList[i];
@@ -380,7 +381,10 @@ async function OnPopupCreation(popup: any) {
                         if (folderList.length > 0) {
                             for (const record of mutationList) {
                                 for (const addedNode of record.addedNodes) {
-                                    addedNode.style.display = "none";
+                                    //b
+                                    if (addedNode.role === "row") {
+                                        addedNode.style.display = "none";
+                                    }
                                 }
                             }
                         } else {
