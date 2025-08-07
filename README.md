@@ -3,11 +3,20 @@
 A Millennium plugin that adds extra functionality to collections on Steam.
 
 ## Features
-- Replace or reset Collection image
+- Replace or reset collection image
 - Add/remove applications to/from collections in bulk
+- Filter collection
+- Start or show random application from collection
+    - To only consider installed applications, set `installed_only_random` to `true` in the configuration
 - Organize collections into folders
+    - Replace or reset folder image
+    - Add/remove collections in bulk
+- Collection manager UI for applications
 
 Big thanks to OsuCelsius!
+
+## Configuration
+- `<STEAM>\plugins\steam-collections-plus\config.json`
 
 ## Prerequisites
 - [Millennium](https://steambrew.app/)
