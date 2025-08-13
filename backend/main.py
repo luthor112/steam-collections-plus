@@ -10,13 +10,6 @@ coll_db = {}
 # UTIL #
 ########
 
-def get_config_fname():
-    return os.path.join(PLUGIN_BASE_DIR, "config.json")
-
-def get_config():
-    with open(get_config_fname(), "rt") as fp:
-        return json.load(fp)
-
 def get_art_dir():
     return os.path.join(PLUGIN_BASE_DIR, "artcache")
 
@@ -221,12 +214,6 @@ class Backend:
         logger.log(f"remove_folder() called with path {folder_path}")
         db_remove_folder(folder_path)
         return True
-
-    @staticmethod
-    def get_installed_only_random():
-        installed_only_random = get_config()["installed_only_random"]
-        logger.log(f"get_installed_only_random() -> {installed_only_random}")
-        return installed_only_random
 
 class Plugin:
     def _front_end_loaded(self):

@@ -15,7 +15,6 @@ const get_folder_list = callable<[{}], string>('Backend.get_folder_list');
 const get_folder_map = callable<[{}], string>('Backend.get_folder_map');
 const add_folder = callable<[{ folder_path: string }], boolean>('Backend.add_folder');
 const remove_folder = callable<[{ folder_path: string }], boolean>('Backend.remove_folder');
-const get_installed_only_random = callable<[{}], boolean>('Backend.get_installed_only_random');
 
 const WaitForElement = async (sel: string, parent = document) =>
 	[...(await Millennium.findElement(parent, sel))][0];
@@ -652,9 +651,8 @@ async function OnPopupCreation(popup: any) {
                                 }}> Reset collection image </MenuItem>
 
                                 <MenuItem onClick={async () => {
-                                    const installedOnly = await get_installed_only_random({});
                                     const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
-                                    const currentAppList = installedOnly ? currentColl.allApps.filter(x => x.installed) : currentColl.allApps;
+                                    const currentAppList = currentColl.allApps;
                                     if (currentAppList.length > 0) {
                                         const randomIndex = Math.floor(Math.random() * currentAppList.length);
                                         SteamClient.Apps.RunGame(currentAppList[randomIndex].appid.toString(), "", 0, 0);
@@ -662,14 +660,31 @@ async function OnPopupCreation(popup: any) {
                                 }}> Start random application </MenuItem>
 
                                 <MenuItem onClick={async () => {
-                                    const installedOnly = await get_installed_only_random({});
                                     const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
-                                    const currentAppList = installedOnly ? currentColl.allApps.filter(x => x.installed) : currentColl.allApps;
+                                    const currentAppList = currentColl.allApps.filter(x => x.installed);
+                                    if (currentAppList.length > 0) {
+                                        const randomIndex = Math.floor(Math.random() * currentAppList.length);
+                                        SteamClient.Apps.RunGame(currentAppList[randomIndex].appid.toString(), "", 0, 0);
+                                    }
+                                }}> Start random application (installed only) </MenuItem>
+
+                                <MenuItem onClick={async () => {
+                                    const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
+                                    const currentAppList = currentColl.allApps;
                                     if (currentAppList.length > 0) {
                                         const randomIndex = Math.floor(Math.random() * currentAppList.length);
                                         SteamUIStore.Navigate(`/library/app/${currentAppList[randomIndex].appid.toString()}`);
                                     }
                                 }}> Show random application </MenuItem>
+
+                                <MenuItem onClick={async () => {
+                                    const currentColl = collectionStore.GetCollection(uiStore.currentGameListSelection.strCollectionId);
+                                    const currentAppList = currentColl.allApps.filter(x => x.installed);
+                                    if (currentAppList.length > 0) {
+                                        const randomIndex = Math.floor(Math.random() * currentAppList.length);
+                                        SteamUIStore.Navigate(`/library/app/${currentAppList[randomIndex].appid.toString()}`);
+                                    }
+                                }}> Show random application (installed only) </MenuItem>
                             </Menu>,
                             cPlusButton,
                             { bForcePopup: true }

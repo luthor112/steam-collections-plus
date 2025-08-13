@@ -4,6 +4,5 @@
     "name": "steam-collections-plus",
     "common_name": "Collections+",
     "description": "Extra functionality for collections",
-    "version": "2.0.1",
-    "include": ["config.json"]
+    "version": "2.0.2"
 }
