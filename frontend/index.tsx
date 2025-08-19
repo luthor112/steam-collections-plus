@@ -132,6 +132,57 @@ async function OnPopupCreation(popup: any) {
                         newCollItem.addEventListener("click", async () => {
                             SteamUIStore.Navigate(`/library/collection/${currentCollId}`);
                         });
+                        
+                        newCollItem.addEventListener("contextmenu", async () => {
+                            showContextMenu(
+                                <Menu label="Collections+ Collection Options">
+                                    <MenuItem onClick={async () => {
+                                        await collectionStore.DeleteCollection(currentCollId);
+                                        newCollItem.remove();
+
+                                        console.log("[steam-collections-plus] Deleted collection", currentCollId);
+                                    }}> Delete collection </MenuItem>
+
+                                    <MenuItem onClick={async () => {
+                                        const inputFileElement = popup.m_popup.document.createElement("input");
+                                        inputFileElement.type = "file";
+                                        inputFileElement.style.display = "none";
+                                        inputFileElement.addEventListener('change', (e) => {
+                                            if (e.target.files) {
+                                                console.log(e.target.files[0]);
+                                                const imageFile = e.target.files[0];
+                                                if (imageFile) {
+                                                    const reader = new FileReader();
+                                                    reader.onload = async (f) => {
+                                                        const imageData = reader.result;
+                                                        await set_coll_image({ coll_id: currentCollId, image_data: imageData });
+
+                                                        newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
+                                                        newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundSize = "cover";
+                                                        newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundPosition = "center";
+
+                                                        console.log("[steam-collections-plus] Image set for", currentCollId);
+                                                    };
+                                                    reader.readAsDataURL(imageFile);
+                                                }
+                                            }
+                                            inputFileElement.remove();
+                                        });
+                                        newCollItem.appendChild(inputFileElement);
+                                        inputFileElement.click();
+                                    }}> Set collection image </MenuItem>
+
+                                    <MenuItem onClick={async () => {
+                                        await set_coll_image({ coll_id: currentCollId, image_data: "" });
+                                        newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = "";
+
+                                        console.log("[steam-collections-plus] Image reset for", currentCollId);
+                                    }}> Reset collection image </MenuItem>
+                                </Menu>,
+                                newCollItem,
+                                { bForcePopup: true }
+                            );
+                        });
                     };
 
                     if (folderList.length > 0) {
