@@ -778,7 +778,6 @@ async function OnPopupCreation(popup: any) {
                                 const currentApp = appStore.allApps.find((x) => x.appid === uiStore.currentGameListSelection.nAppId);
                                 setManagedAppName(currentApp.display_name);
 
-                                
                                 setFolderList(["root"].concat(JSON.parse(await get_folder_list({}))));
 
                                 let wipStateList = [];
@@ -822,6 +821,27 @@ async function OnPopupCreation(popup: any) {
                                 }
                             }
 
+                            const GenerateFolderListItem = (folderPath) => {
+                                return (
+                                    <li style={liStyle}>
+                                        <details open>
+                                            <summary>{folderPath.replaceAll("/", " ≫ ")}</summary>
+                                            <ul style={ulStyle}>
+                                                {collectionStateList.filter((x) => x.collectionFolder === folderPath).map((collectionData, index) => {
+                                                    return (
+                                                        <li style={liStyle}>
+                                                            <input key={collectionData.collectionID} id={`coll-chkbox-${collectionData.collectionID}`} data-collectionid={collectionData.collectionID} data-incollection={collectionData.appInColl} type="checkbox" defaultChecked={collectionData.appInColl} />
+                                                            <label for={`coll-chkbox-${collectionData.collectionID}`}>{collectionData.collectionName}</label>
+                                                        </li>
+                                                    );
+                                                })}
+                                                {folderList.filter((x) => x.startsWith(`${folderPath}/`)).filter((x) => !x.includes("/", folderPath.length + 1)).map((childFolderName, index) => GenerateFolderListItem(childFolderName))}
+                                            </ul>
+                                        </details>
+                                    </li>
+                                );
+                            };
+
                             useEffect(() => {
                                 GetCurrentSettings();
                             }, []);
@@ -832,25 +852,7 @@ async function OnPopupCreation(popup: any) {
                                     <br />
                                     Collections: <br />
                                     <ul style={treeStyle}>
-                                        {folderList.map((folderPath, index) => {
-                                            return (
-                                                <li style={liStyle}>
-                                                    <details open>
-                                                        <summary>{folderPath.replaceAll("/", " ≫ ")}</summary>
-                                                        <ul style={ulStyle}>
-                                                            {collectionStateList.filter((x) => x.collectionFolder === folderPath).map((collectionData, index) => {
-                                                                return (
-                                                                    <li style={liStyle}>
-                                                                        <input key={collectionData.collectionID} id={`coll-chkbox-${collectionData.collectionID}`} data-collectionid={collectionData.collectionID} data-incollection={collectionData.appInColl} type="checkbox" defaultChecked={collectionData.appInColl} />
-                                                                        <label for={`coll-chkbox-${collectionData.collectionID}`}>{collectionData.collectionName}</label>
-                                                                    </li>
-                                                                );
-                                                            })}
-                                                        </ul>
-                                                    </details>
-                                                </li>
-                                            );
-                                        })}
+                                        {GenerateFolderListItem("root")}
                                     </ul>
                                     <DialogButton style={{width: "120px"}} onClick={ApplyCollectionSelection}>Apply</DialogButton>
                                 </ModalRoot>
