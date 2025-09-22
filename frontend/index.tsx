@@ -111,8 +111,8 @@ async function OnPopupCreation(popup: any) {
                         console.log("[steam-collections-plus] Processing collection", currentCollName);
 
                         const newCollItem = templateCollection.cloneNode(true);
-                        newCollItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.${findModule(e => e.CollectionLabelCount).CollectionLabelCount})`).textContent = currentCollName;
-                        newCollItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div.${findModule(e => e.CollectionLabelCount).CollectionLabelCount}`).textContent = currentCollContains;
+                        newCollItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.Focusable)`).textContent = currentCollName;
+                        newCollItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div.Focusable > div`).textContent = currentCollContains;
 
                         const imageData = await get_coll_image({ coll_id: currentCollId });
                         if (imageData !== "") {
