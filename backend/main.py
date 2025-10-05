@@ -1,8 +1,11 @@
 import Millennium, PluginUtils # type: ignore
 logger = PluginUtils.Logger()
 
+import base64
 import json
 import os
+
+WINDOWS_RESERVED_CHARS = r'<>:"/\\|?*'
 
 coll_db = {}
 
@@ -35,6 +38,12 @@ def save_encoded_image(fname, fdata):
     with open(fname, "wt") as fp:
         fp.write(fdata)
 
+def get_safe_fname(fname):
+    if any(c in WINDOWS_RESERVED_CHARS for c in fname):
+        return base64.urlsafe_b64encode(fname.encode()).decode("ascii").rstrip("=")
+    else:
+        return fname
+
 ###########
 # DB UTIL #
 ###########
@@ -43,7 +52,7 @@ def db_get_image(coll_id):
     global coll_db
     if coll_id in coll_db:
         if "image" in coll_db[coll_id]:
-            fname = os.path.join(get_art_dir(), coll_id)
+            fname = os.path.join(get_art_dir(), get_safe_fname(coll_id))
             if coll_db[coll_id]["image"] and os.path.exists(fname):
                 return get_encoded_image(fname)
     return ""
@@ -54,7 +63,7 @@ def db_save_image(coll_id, image_data):
         coll_db[coll_id] = {}
 
     if image_data != "":
-        fname = os.path.join(get_art_dir(), coll_id)
+        fname = os.path.join(get_art_dir(), get_safe_fname(coll_id))
         save_encoded_image(fname, image_data)
         coll_db[coll_id]["image"] = True
     else:
