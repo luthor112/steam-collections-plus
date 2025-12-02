@@ -12,16 +12,16 @@
   },
   "type": "module",
   "name": "steam-collections-plus",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Extra functionality for collections",
   "main": "./frontend/index.jsx",
   "author": "luthor112",
   "license": "MIT",
   "dependencies": {
-    "@steambrew/api": "^5.5.14",
-    "@steambrew/client": "^5.5.14",
-    "@steambrew/ttc": "^2.7.5",
-    "@steambrew/webkit": "^5.5.14",
+    "@steambrew/api": "^5.8.3",
+    "@steambrew/client": "^5.8.3",
+    "@steambrew/ttc": "^2.8.6",
+    "@steambrew/webkit": "^5.8.3",
     "preact": "^10.25.0"
   }
 }

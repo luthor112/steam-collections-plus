@@ -1,5 +1,5 @@
 import { callable, findModule, sleep, Millennium, Menu, MenuItem, showContextMenu, DialogButton, TextField, ModalRoot, showModal } from "@steambrew/client";
-import { render } from "react-dom";
+import { createRoot } from "react-dom/client";
 import React, { useState, useEffect } from "react";
 
 // Backend functions
@@ -452,16 +452,19 @@ async function OnPopupCreation(popup: any) {
                 const oldCPlusButton = collOptionsDiv.querySelector('button.collectionsplus-button');
                 if (!oldCPlusButton) {
                     const cPlusButton = popup.m_popup.document.createElement("div");
-                    render(<DialogButton className="collectionsplus-button" style={{width: "40px", marginLeft: "3px", marginRight: "3px"}}>C+</DialogButton>, cPlusButton);
+                    const cPlusButtonRoot = createRoot(cPlusButton);
+                    cPlusButtonRoot.render(<DialogButton className="collectionsplus-button" style={{width: "40px", marginLeft: "3px", marginRight: "3px"}}>C+</DialogButton>);
                     collOptionsDiv.insertBefore(cPlusButton, collOptionsDiv.firstChild.nextSibling);
 
                     cPlusButton.addEventListener("click", async () => {
                         async function showBulkUI(addMode, filterOnly) {
                             const cPlusFilterBox = popup.m_popup.document.createElement("div");
-                            render(<TextField  placeholder="filter"></TextField>, cPlusFilterBox);
+                            const cPlusFilterBoxRoot = createRoot(cPlusFilterBox);
+                            cPlusFilterBoxRoot.render(<TextField  placeholder="filter"></TextField>);
                             collOptionsDiv.insertBefore(cPlusFilterBox, cPlusButton.nextSibling);
                             const cPlusFilterOK = popup.m_popup.document.createElement("div");
-                            render(<DialogButton style={{width: "40px"}}>OK</DialogButton>, cPlusFilterOK);
+                            const cPlusFilterOKRoot = createRoot(cPlusFilterOK);
+                            cPlusFilterOKRoot.render(<DialogButton style={{width: "40px"}}>OK</DialogButton>);
                             collOptionsDiv.insertBefore(cPlusFilterOK, cPlusFilterBox.nextSibling);
 
                             if (filterOnly) {
