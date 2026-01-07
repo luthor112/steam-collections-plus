@@ -1,20 +1,10 @@
-import { callable, findModule, sleep, Millennium, Menu, MenuItem, showContextMenu, DialogButton, TextField, ModalRoot, showModal } from "@steambrew/client";
+import { callable, findModule, sleep, Millennium, Menu, MenuItem, showContextMenu, DialogButton, ModalRoot, showModal, IconsModule, definePlugin, Field, TextField, Toggle } from "@steambrew/client";
 import { createRoot } from "react-dom/client";
 import React, { useState, useEffect } from "react";
 
 // Backend functions
-const get_coll_image = callable<[{ coll_id: string }], string>('Backend.get_coll_image');
-const set_coll_image = callable<[{ coll_id: string, image_data: string }], boolean>('Backend.set_coll_image');
-const get_folder_image = callable<[{ folder_path: string }], string>('Backend.get_folder_image');
-const set_folder_image = callable<[{ folder_path: string, image_data: string }], boolean>('Backend.set_folder_image');
-const get_last_filter = callable<[{ coll_id: string, op_type: string }], string>('Backend.get_last_filter');
-const set_last_filter = callable<[{ coll_id: string, op_type: string, op_data: string }], boolean>('Backend.set_last_filter');
-const get_folder = callable<[{ coll_id: string }], string>('Backend.get_folder');
-const set_folder = callable<[{ coll_id: string, folder_path: string }], boolean>('Backend.set_folder');
-const get_folder_list = callable<[{}], string>('Backend.get_folder_list');
-const get_folder_map = callable<[{}], string>('Backend.get_folder_map');
-const add_folder = callable<[{ folder_path: string }], boolean>('Backend.add_folder');
-const remove_folder = callable<[{ folder_path: string }], boolean>('Backend.remove_folder');
+const get_encoded_image = callable<[{ filename: string }], string>('get_encoded_image');
+const save_encoded_image = callable<[{ a_filename: string, b_filedata: string }], boolean>('save_encoded_image');
 
 const WaitForElement = async (sel: string, parent = document) =>
 	[...(await Millennium.findElement(parent, sel))][0];
@@ -24,6 +14,163 @@ const WaitForElementTimeout = async (sel: string, parent = document, timeOut = 1
 
 const WaitForElementList = async (sel: string, parent = document) =>
 	[...(await Millennium.findElement(parent, sel))];
+
+const WINDOWS_RESERVED_CHARS = ["<", ">", ":", "\"", "/", "\\", "|", "?", "*"];
+
+var collDB = {};
+
+function save_coll_db() {
+    localStorage.setItem("luthor112.steam-collections-plus.colldb", JSON.stringify(collDB));
+}
+
+function get_safe_fname(fname) {
+    if (WINDOWS_RESERVED_CHARS.some(ch => fname.includes(ch))) {
+        return btoa(fname);
+    } else {
+        return fname;
+    }
+}
+
+async function db_get_image(coll_id) {
+    if (coll_id in collDB) {
+        if ("image" in collDB[coll_id]) {
+            const fname = get_safe_fname(coll_id);
+            if (collDB[coll_id]["image"]) {
+                return await get_encoded_image({ filename: fname });
+            }
+        }
+    }
+    return "";
+}
+
+async function db_save_image(coll_id, image_data) {
+    if (!(coll_id in collDB)) {
+        collDB[coll_id] = {};
+    }
+
+    if (image_data !== "") {
+        const fname = get_safe_fname(coll_id);
+        await save_encoded_image({ a_filename: fname, b_filedata: image_data });
+        collDB[coll_id]["image"] = true;
+    } else {
+        collDB[coll_id]["image"] = false;
+    }
+
+    save_coll_db();
+}
+
+async function get_coll_image(coll_id) {
+    return await db_get_image(coll_id);
+}
+
+async function set_coll_image(coll_id, image_data) {
+    await db_save_image(coll_id, image_data);
+}
+
+async function get_folder_image(folder_path) {
+    const convertedCollID = folder_path.replaceAll("/", "__");
+    return await db_get_image(`__folder__${convertedCollID}`);
+}
+
+async function set_folder_image(folder_path, image_data) {
+    const convertedCollID = folder_path.replaceAll("/", "__");
+    await db_save_image(`__folder__${convertedCollID}`, image_data);
+}
+
+function get_last_filter(coll_id, op_type) {
+    if (coll_id in collDB) {
+        if (op_type in collDB[coll_id]) {
+            return collDB[coll_id][op_type];
+        }
+    }
+    return "";
+}
+
+function set_last_filter(coll_id, op_type, op_data) {
+    if (!(coll_id in collDB)) {
+        collDB[coll_id] = {};
+    }
+    collDB[coll_id][op_type] = op_data;
+    save_coll_db();
+}
+
+function get_folder(coll_id) {
+    if (coll_id in collDB) {
+        if ("folder" in collDB[coll_id]) {
+            return collDB[coll_id]["folder"];
+        }
+    }
+    return "root";
+}
+
+function set_folder(coll_id, folder_path) {
+    if (!(coll_id in collDB)) {
+        collDB[coll_id] = {};
+    }
+    collDB[coll_id]["folder"] = folder_path;
+    save_coll_db();
+}
+
+function get_folder_list() {
+    if ("__folderlist" in collDB) {
+        return collDB["__folderlist"];
+    }
+    return [];
+}
+
+function get_folder_map() {
+    let folder_map = [];
+    for (const [coll_id, coll_data] of Object.entries(collDB)) {
+        if (coll_id === "__folderlist") continue;
+
+        let coll_folder = "root";
+        if ("folder" in coll_data) {
+            coll_folder = coll_data["folder"];
+        }
+        folder_map[coll_id] = coll_folder;
+    }
+    return folder_map;
+}
+
+function add_folder(folder_path) {
+    if (!("__folderlist" in collDB)) {
+        collDB["__folderlist"] = [];
+    }
+
+    if (!(folder_path in collDB["__folderlist"])) {
+        collDB["__folderlist"].push(folder_path);
+        collDB["__folderlist"].sort();
+        save_coll_db();
+        return true;
+    }
+    return false;
+}
+
+function remove_folder(folder_path) {
+    if (!("__folderlist" in collDB)) {
+        collDB["__folderlist"] = [];
+    }
+
+    let new_folderlist = [];
+    for (const current_folder_path of collDB["__folderlist"]) {
+        if ((current_folder_path !== folder_path) && (!current_folder_path.startsWith(`${folder_path}/`))) {
+            new_folderlist.push(current_folder_path);
+        }
+    }
+    collDB["__folderlist"] = new_folderlist;
+
+    for (const [coll_id, coll_data] of Object.entries(collDB)) {
+        if (coll_id === "__folderlist") continue;
+
+        if ("folder" in coll_data) {
+            if ((coll_data["folder"] === folder_path) || (coll_data["folder"].startsWith(`${folder_path}/`))) {
+                coll_data["folder"] = "root";
+            }
+        }
+    }
+
+    save_coll_db();
+}
 
 async function OnPopupCreation(popup: any) {
     if (popup.m_strName === "SP Desktop_uid0") {
@@ -39,8 +186,8 @@ async function OnPopupCreation(popup: any) {
 
         MainWindowBrowserManager.m_browser.on("finished-request", async (currentURL, previousURL) => {
             if (MainWindowBrowserManager.m_lastLocation.pathname === "/library/collections") {
-                const folderList = JSON.parse(await get_folder_list({}));
-                const folderMap = JSON.parse(await get_folder_map({}));
+                const folderList = get_folder_list();
+                const folderMap = get_folder_map();
 
                 const collGrid = await WaitForElement(`div.${findModule(e => e.CSSGrid).CSSGrid}`, popup.m_popup.document);
                 if (collGrid) {
@@ -85,7 +232,7 @@ async function OnPopupCreation(popup: any) {
                                 collID = collObj[0].m_strId;
                             }
 
-                            const imageData = await get_coll_image({ coll_id: collID });
+                            const imageData = await get_coll_image(collID);
                             if (imageData !== "") {
                                 collItemList[i].querySelector(`div.${findModule(e => e.DisplayCaseContainerBounds).DisplayCaseContainerBounds}`).style.display = "none";
                                 collItemList[i].querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
@@ -114,7 +261,7 @@ async function OnPopupCreation(popup: any) {
                         newCollItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div:not(.Focusable)`).textContent = currentCollName;
                         newCollItem.querySelector(`div.${findModule(e => e.CollectionLabel).CollectionLabel} > div.Focusable > div`).textContent = currentCollContains;
 
-                        const imageData = await get_coll_image({ coll_id: currentCollId });
+                        const imageData = await get_coll_image(currentCollId);
                         if (imageData !== "") {
                             newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
                             newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundSize = "cover";
@@ -155,7 +302,7 @@ async function OnPopupCreation(popup: any) {
                                                     const reader = new FileReader();
                                                     reader.onload = async (f) => {
                                                         const imageData = reader.result;
-                                                        await set_coll_image({ coll_id: currentCollId, image_data: imageData });
+                                                        await set_coll_image(currentCollId, imageData);
 
                                                         newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = `url(${imageData})`;
                                                         newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundSize = "cover";
@@ -173,7 +320,7 @@ async function OnPopupCreation(popup: any) {
                                     }}> Set collection image </MenuItem>
 
                                     <MenuItem onClick={async () => {
-                                        await set_coll_image({ coll_id: currentCollId, image_data: "" });
+                                        await set_coll_image(currentCollId, "");
                                         newCollItem.querySelector(`div.${findModule(e => e.CollectionImage).CollectionImage}`).style.backgroundImage = "";
 
                                         console.log("[steam-collections-plus] Image reset for", currentCollId);
@@ -218,7 +365,7 @@ async function OnPopupCreation(popup: any) {
                         folderItem.dataset.itempath = folderPath;
                         collGrid.insertBefore(folderItem, templateItem.nextSibling);
 
-                        const imageData = await get_folder_image({ folder_path: folderFullPath });
+                        const imageData = await get_folder_image(folderFullPath);
                         if (imageData !== "") {
                             folderItem.style.backgroundImage = `url(${imageData})`;
                             folderItem.style.backgroundSize = "cover";
@@ -237,7 +384,7 @@ async function OnPopupCreation(popup: any) {
                                 <Menu label="Collections+ Folder Options">
                                     <MenuItem onClick={async () => {
                                         // Remove folder from database and UI
-                                        await remove_folder({ folder_path: folderFullPath });
+                                        remove_folder(folderFullPath);
                                         folderItem.remove();
 
                                         // Remove subfolders from UI
@@ -272,7 +419,7 @@ async function OnPopupCreation(popup: any) {
                                                     const reader = new FileReader();
                                                     reader.onload = async (f) => {
                                                         const imageData = reader.result;
-                                                        await set_folder_image({ folder_path: folderFullPath, image_data: imageData });
+                                                        await set_folder_image(folderFullPath, imageData);
 
                                                         folderItem.style.backgroundImage = `url(${imageData})`;
                                                         folderItem.style.backgroundSize = "cover";
@@ -290,7 +437,7 @@ async function OnPopupCreation(popup: any) {
                                     }}> Set folder image </MenuItem>
 
                                     <MenuItem onClick={async () => {
-                                        await set_folder_image({ folder_path: folderFullPath, image_data: "" });
+                                        await set_folder_image(folderFullPath, "");
 
                                         folderItem.style.backgroundImage = "";
 
@@ -347,7 +494,7 @@ async function OnPopupCreation(popup: any) {
                                     setManagedFolderName(currentPath.substring(currentPath.lastIndexOf("/") + 1));
 
                                     let wipStateList = [];
-                                    const latestFolderMap = JSON.parse(await get_folder_map({}));
+                                    const latestFolderMap = get_folder_map();
                                     for (let i = 0; i < collectionStore.userCollections.length; i++) {
                                         const currentCollID = collectionStore.userCollections[i].m_strId;
                                         if (currentCollID !== "uncategorized") {
@@ -365,7 +512,7 @@ async function OnPopupCreation(popup: any) {
                                 // Add subfolder
                                 const AddNewFolder = async (e) => {
                                     const newFolderPath = currentPath + "/" + e.target.parentElement.querySelector("#newFolderName").value;
-                                    const successfulAdd = await add_folder({folder_path: newFolderPath});
+                                    const successfulAdd = add_folder(newFolderPath);
                                     if (successfulAdd) {
                                         addFolderItem(templateItem, newFolderPath);
                                         switchPath(currentPath);
@@ -382,12 +529,12 @@ async function OnPopupCreation(popup: any) {
                                         if (!allCheckboxes[i].checked && allCheckboxes[i].dataset.incurrentfolder === "true") {
                                             // Remove collection from current folder
                                             console.log(`[steam-collections-plus] Removing ${collID} from`, currentPath);
-                                            await set_folder({coll_id: collID, folder_path: "root"});
+                                            set_folder(collID, "root");
                                             collGrid.querySelector(`:scope > div[data-collectionid="${collID}"]`).dataset.itempath = "root";
                                         } else if (allCheckboxes[i].checked && allCheckboxes[i].dataset.incurrentfolder === "false") {
                                             // Add collection to current folder
                                             console.log(`[steam-collections-plus] Moving ${collID} to`, currentPath);
-                                            await set_folder({coll_id: collID, folder_path: currentPath});
+                                            set_folder(collID, currentPath);
                                             collGrid.querySelector(`:scope > div[data-collectionid="${collID}"]`).dataset.itempath = currentPath;
                                         }
                                     }
@@ -468,11 +615,11 @@ async function OnPopupCreation(popup: any) {
                             collOptionsDiv.insertBefore(cPlusFilterOK, cPlusFilterBox.nextSibling);
 
                             if (filterOnly) {
-                                cPlusFilterBox.querySelector("input").value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "filter" });
+                                cPlusFilterBox.querySelector("input").value = get_last_filter(uiStore.currentGameListSelection.strCollectionId, "filter");
                             } else if (addMode) {
-                                cPlusFilterBox.querySelector("input").value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add" });
+                                cPlusFilterBox.querySelector("input").value = get_last_filter(uiStore.currentGameListSelection.strCollectionId, "add");
                             } else {
-                                cPlusFilterBox.querySelector("input").value = await get_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove" });
+                                cPlusFilterBox.querySelector("input").value = get_last_filter(uiStore.currentGameListSelection.strCollectionId, "remove");
                             }
 
                             cPlusFilterOK.addEventListener("click", async () => {
@@ -646,14 +793,14 @@ async function OnPopupCreation(popup: any) {
                                 cPlusFilterOK.remove();
                                 cPlusFilterBox.remove();
                                 if (filterOnly) {
-                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "filter", op_data: cPlusFilterValue });
+                                    set_last_filter(uiStore.currentGameListSelection.strCollectionId, "filter", cPlusFilterValue);
                                     SteamUIStore.Navigate(`/library/collection/${modifiedList}`);
                                     console.log("[steam-collections-plus] Applications filtered in", uiStore.currentGameListSelection.strCollectionId);
                                 } else if (addMode) {
-                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "add", op_data: cPlusFilterValue });
+                                    set_last_filter(uiStore.currentGameListSelection.strCollectionId, "add", cPlusFilterValue);
                                     console.log("[steam-collections-plus] Applications added to", uiStore.currentGameListSelection.strCollectionId);
                                 } else {
-                                    await set_last_filter({ coll_id: uiStore.currentGameListSelection.strCollectionId, op_type: "remove", op_data: cPlusFilterValue });
+                                    set_last_filter(uiStore.currentGameListSelection.strCollectionId, "remove", cPlusFilterValue);
                                     console.log("[steam-collections-plus] Applications removed from", uiStore.currentGameListSelection.strCollectionId);
                                 }
                             });
@@ -685,7 +832,7 @@ async function OnPopupCreation(popup: any) {
                                                 const reader = new FileReader();
                                                 reader.onload = async (f) => {
                                                     const imageData = reader.result;
-                                                    await set_coll_image({ coll_id: uiStore.currentGameListSelection.strCollectionId, image_data: imageData });
+                                                    await set_coll_image(uiStore.currentGameListSelection.strCollectionId, imageData);
 
                                                     console.log("[steam-collections-plus] Image set for", uiStore.currentGameListSelection.strCollectionId);
                                                 };
@@ -699,7 +846,7 @@ async function OnPopupCreation(popup: any) {
                                 }}> Set collection image </MenuItem>
 
                                 <MenuItem onClick={async () => {
-                                    await set_coll_image({ coll_id: uiStore.currentGameListSelection.strCollectionId, image_data: "" });
+                                    await set_coll_image(uiStore.currentGameListSelection.strCollectionId, "");
 
                                     console.log("[steam-collections-plus] Image reset for", uiStore.currentGameListSelection.strCollectionId);
                                 }}> Reset collection image </MenuItem>
@@ -781,10 +928,10 @@ async function OnPopupCreation(popup: any) {
                                 const currentApp = appStore.allApps.find((x) => x.appid === uiStore.currentGameListSelection.nAppId);
                                 setManagedAppName(currentApp.display_name);
 
-                                setFolderList(["root"].concat(JSON.parse(await get_folder_list({}))));
+                                setFolderList(["root"].concat(get_folder_list()));
 
                                 let wipStateList = [];
-                                const latestFolderMap = JSON.parse(await get_folder_map({}));
+                                const latestFolderMap = get_folder_map();
                                 for (let i = 0; i < collectionStore.userCollections.length; i++) {
                                     const currentCollID = collectionStore.userCollections[i].m_strId;
                                     if (currentCollID !== "uncategorized") {
@@ -873,9 +1020,10 @@ async function OnPopupCreation(popup: any) {
     }
 }
 
-export default async function PluginMain() {
+async function pluginMain() {
     console.log("[steam-collections-plus] Frontend startup");
     await App.WaitForServicesInitialized();
+    await sleep(100);
 
     while (
         typeof g_PopupManager === 'undefined' ||
@@ -884,6 +1032,10 @@ export default async function PluginMain() {
         await sleep(100);
     }
 
+    const storedDB = JSON.parse(localStorage.getItem("luthor112.steam-collections-plus.colldb"));
+    collDB = { ...collDB, ...storedDB };
+    console.log("[steam-collections-plus] CollDB loaded");
+
     const doc = g_PopupManager.GetExistingPopup("SP Desktop_uid0");
 	if (doc) {
 		OnPopupCreation(doc);
@@ -891,3 +1043,11 @@ export default async function PluginMain() {
 
 	g_PopupManager.AddPopupCreatedCallback(OnPopupCreation);
 }
+
+export default definePlugin(async () => {
+    await pluginMain();
+    return {
+		title: "Collections+",
+		icon: <IconsModule.Settings />,
+	};
+});
