@@ -18,6 +18,11 @@ Big thanks to OsuCelsius!
 ## Prerequisites
 - [Millennium](https://steambrew.app/)
 
+## Installation
+- Copy the plugin ID from the [Millennium plugins](https://steambrew.app/plugins) page
+- Click `Plugins` and `Install a plugin` in the Millennium settings and paste the ID
+- Allow 10 seconds for the plugin to load after each startup
+
 ## Bulk add/remove filter language
 - Multiple predicates can be provided, delimited by `;`
 - Each predicate is made up of two or three parts: `<PROPERTY> <OPERATOR> <VALUE>`
@@ -54,6 +59,6 @@ Big thanks to OsuCelsius!
 ## Known issues
 - Collection preview as Collection image does not work if any Folders are used
     - This is a workaround because of the way Steam loads lists
-- Folder images might not work on some themes, including Simple Dark and Minimal Dark
+- Folder images might not work on some themes
 - Text-based filtering instead of a full-fledged UI
     - Yeah...

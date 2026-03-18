@@ -173,6 +173,7 @@ function remove_folder(folder_path) {
 }
 
 async function OnPopupCreation(popup: any) {
+    await sleep(10000);
     if (popup.m_strName === "SP Desktop_uid0") {
         var mwbm = undefined;
         while (!mwbm) {
@@ -1020,32 +1021,15 @@ async function OnPopupCreation(popup: any) {
     }
 }
 
-async function pluginMain() {
+export default definePlugin(() => {
     console.log("[steam-collections-plus] Frontend startup");
-    await App.WaitForServicesInitialized();
-    await sleep(100);
-
-    while (
-        typeof g_PopupManager === 'undefined' ||
-        typeof MainWindowBrowserManager === 'undefined'
-    ) {
-        await sleep(100);
-    }
-
+    
     const storedDB = JSON.parse(localStorage.getItem("luthor112.steam-collections-plus.colldb"));
     collDB = { ...collDB, ...storedDB };
     console.log("[steam-collections-plus] CollDB loaded");
-
-    const doc = g_PopupManager.GetExistingPopup("SP Desktop_uid0");
-	if (doc) {
-		OnPopupCreation(doc);
-	}
-
-	g_PopupManager.AddPopupCreatedCallback(OnPopupCreation);
-}
-
-export default definePlugin(async () => {
-    await pluginMain();
+    
+    Millennium.AddWindowCreateHook(OnPopupCreation);
+    
     return {
 		title: "Collections+",
 		icon: <IconsModule.Settings />,
