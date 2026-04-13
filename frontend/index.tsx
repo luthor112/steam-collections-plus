@@ -1,4 +1,4 @@
-import { callable, findModule, sleep, Millennium, Menu, MenuItem, showContextMenu, DialogButton, ModalRoot, showModal, IconsModule, definePlugin, Field, TextField, Toggle } from "@steambrew/client";
+import { callable, findModule, sleep, Millennium, Menu, MenuItem, showContextMenu, DialogButton, ModalRoot, showModal, IconsModule, definePlugin, TextField } from "@steambrew/client";
 import { createRoot } from "react-dom/client";
 import React, { useState, useEffect } from "react";
 
@@ -6,12 +6,15 @@ import React, { useState, useEffect } from "react";
 const get_encoded_image = callable<[{ filename: string }], string>('get_encoded_image');
 const save_encoded_image = callable<[{ a_filename: string, b_filedata: string }], boolean>('save_encoded_image');
 
+// @ts-ignore
 const WaitForElement = async (sel: string, parent = document) =>
 	[...(await Millennium.findElement(parent, sel))][0];
 
+// @ts-ignore
 const WaitForElementTimeout = async (sel: string, parent = document, timeOut = 1000) =>
 	[...(await Millennium.findElement(parent, sel, timeOut))][0];
 
+// @ts-ignore
 const WaitForElementList = async (sel: string, parent = document) =>
 	[...(await Millennium.findElement(parent, sel))];
 
@@ -94,15 +97,6 @@ function set_last_filter(coll_id, op_type, op_data) {
     save_coll_db();
 }
 
-function get_folder(coll_id) {
-    if (coll_id in collDB) {
-        if ("folder" in collDB[coll_id]) {
-            return collDB[coll_id]["folder"];
-        }
-    }
-    return "root";
-}
-
 function set_folder(coll_id, folder_path) {
     if (!(coll_id in collDB)) {
         collDB[coll_id] = {};
@@ -120,7 +114,10 @@ function get_folder_list() {
 
 function get_folder_map() {
     let folder_map = [];
-    for (const [coll_id, coll_data] of Object.entries(collDB)) {
+    for (const coll_entry of Object.entries(collDB)) {
+        const coll_id : string = coll_entry[0];
+        const coll_data : any  = coll_entry[1];
+
         if (coll_id === "__folderlist") continue;
 
         let coll_folder = "root";
@@ -151,7 +148,7 @@ function remove_folder(folder_path) {
         collDB["__folderlist"] = [];
     }
 
-    let new_folderlist = [];
+    let new_folderlist : string[] = [];
     for (const current_folder_path of collDB["__folderlist"]) {
         if ((current_folder_path !== folder_path) && (!current_folder_path.startsWith(`${folder_path}/`))) {
             new_folderlist.push(current_folder_path);
@@ -159,7 +156,10 @@ function remove_folder(folder_path) {
     }
     collDB["__folderlist"] = new_folderlist;
 
-    for (const [coll_id, coll_data] of Object.entries(collDB)) {
+    for (const coll_entry of Object.entries(collDB)) {
+        const coll_id : string = coll_entry[0];
+        const coll_data : any  = coll_entry[1];
+
         if (coll_id === "__folderlist") continue;
 
         if ("folder" in coll_data) {
