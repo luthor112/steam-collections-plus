@@ -194,6 +194,11 @@ async function OnPopupCreation(popup: any) {
                 if (collGrid) {
                     var currentPath = "root";
 
+                    // Prevent UI duplication
+                    if (collGrid.parentElement.parentElement.parentElement.parentElement.querySelector("div.steam-collections-plus-path")) {
+                        return;
+                    }
+
                     // Switch folder
                     const switchPath = async (newPath) => {
                         const allItemsList = collGrid.querySelectorAll(":scope > div[data-itempath]");
