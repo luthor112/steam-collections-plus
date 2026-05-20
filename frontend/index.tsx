@@ -18,9 +18,11 @@ const WaitForElementList = async (sel: string, parent = document) =>
 const WINDOWS_RESERVED_CHARS = ["<", ">", ":", "\"", "/", "\\", "|", "?", "*"];
 
 var collDB = {};
+var folderList = [];
 
 function save_coll_db() {
     localStorage.setItem("luthor112.steam-collections-plus.colldb", JSON.stringify(collDB));
+    localStorage.setItem("luthor112.steam-collections-plus.folderlist", JSON.stringify(folderList));
 }
 
 function get_safe_fname(fname) {
@@ -112,17 +114,12 @@ function set_folder(coll_id, folder_path) {
 }
 
 function get_folder_list() {
-    if ("__folderlist" in collDB) {
-        return collDB["__folderlist"];
-    }
-    return [];
+    return folderList;
 }
 
 function get_folder_map() {
     let folder_map = [];
     for (const [coll_id, coll_data] of Object.entries(collDB)) {
-        if (coll_id === "__folderlist") continue;
-
         let coll_folder = "root";
         if ("folder" in coll_data) {
             coll_folder = coll_data["folder"];
@@ -133,13 +130,9 @@ function get_folder_map() {
 }
 
 function add_folder(folder_path) {
-    if (!("__folderlist" in collDB)) {
-        collDB["__folderlist"] = [];
-    }
-
-    if (!(folder_path in collDB["__folderlist"])) {
-        collDB["__folderlist"].push(folder_path);
-        collDB["__folderlist"].sort();
+    if (!folderList.includes(folder_path)) {
+        folderList.push(folder_path);
+        folderList.sort();
         save_coll_db();
         return true;
     }
@@ -147,21 +140,15 @@ function add_folder(folder_path) {
 }
 
 function remove_folder(folder_path) {
-    if (!("__folderlist" in collDB)) {
-        collDB["__folderlist"] = [];
-    }
-
     let new_folderlist = [];
-    for (const current_folder_path of collDB["__folderlist"]) {
+    for (const current_folder_path of folderList) {
         if ((current_folder_path !== folder_path) && (!current_folder_path.startsWith(`${folder_path}/`))) {
             new_folderlist.push(current_folder_path);
         }
     }
-    collDB["__folderlist"] = new_folderlist;
+    folderList = new_folderlist;
 
     for (const [coll_id, coll_data] of Object.entries(collDB)) {
-        if (coll_id === "__folderlist") continue;
-
         if ("folder" in coll_data) {
             if ((coll_data["folder"] === folder_path) || (coll_data["folder"].startsWith(`${folder_path}/`))) {
                 coll_data["folder"] = "root";
@@ -1030,9 +1017,21 @@ export default definePlugin(() => {
     console.log("[steam-collections-plus] Frontend startup");
     
     const storedDB = JSON.parse(localStorage.getItem("luthor112.steam-collections-plus.colldb"));
+    if (storedDB) {
+        if ("__folderlist" in storedDB) {
+            folderList = storedDB["__folderlist"];
+            delete storedDB["__folderlist"];
+        }
+    }
     collDB = { ...collDB, ...storedDB };
     console.log("[steam-collections-plus] CollDB loaded");
-    
+
+    const storedFolderList = JSON.parse(localStorage.getItem("luthor112.steam-collections-plus.folderlist"));
+    if (storedFolderList) {
+        folderList = storedFolderList;
+    }
+    console.log("[steam-collections-plus] Folderlist loaded");
+
     Millennium.AddWindowCreateHook(OnPopupCreation);
     
     return {
