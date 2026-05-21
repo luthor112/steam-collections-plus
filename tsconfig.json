@@ -2,7 +2,7 @@
     "compilerOptions": {
         "outDir": ".millennium/Dist",
         "module": "ESNext",
-        "target": "ES2020",
+        "target": "ES2021",
         "jsx": "react",
         "declaration": false,
         "moduleResolution": "node",
@@ -14,7 +14,6 @@
         "noImplicitAny": true,
         "allowSyntheticDefaultImports": true,
         "skipLibCheck": true,
-        "resolveJsonModule": true,
-        "noCheck": true
+        "resolveJsonModule": true
     }
 }
