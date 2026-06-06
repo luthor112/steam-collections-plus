@@ -4,6 +4,6 @@
     "name": "steam-collections-plus",
     "common_name": "Collections+",
     "description": "Extra functionality for collections",
-    "version": "3.0.2",
+    "version": "3.0.3",
     "backendType": "lua"
 }

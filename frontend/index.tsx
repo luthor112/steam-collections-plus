@@ -1014,7 +1014,7 @@ async function OnPopupCreation(popup: any) {
                                                         </li>
                                                     );
                                                 })}
-                                                {folderList.filter((x) => x.startsWith(`${folderPath}/`)).filter((x) => !x.includes("/", folderPath.length + 1)).map((childFolderName, index) => { void index; GenerateFolderListItem(childFolderName); })}
+                                                {folderList.filter((x) => x.startsWith(`${folderPath}/`)).filter((x) => !x.includes("/", folderPath.length + 1)).map((childFolderName, index) => { void index; return GenerateFolderListItem(childFolderName); })}
                                             </ul>
                                         </details>
                                     </li>
