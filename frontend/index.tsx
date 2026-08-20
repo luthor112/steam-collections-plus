@@ -210,7 +210,7 @@ function getBulkUIComponent(popup: any) {
             { label: 'Current Filtered List', data: 'filtered' }
         ];
 
-        let propertyOptions: DropdownOption[] = [];
+        let propertyOptions: DropdownOption[] = [{ label: 'In collection (true/false)', data: 'in_collection' }];
         Object.keys(appStore.allApps[0]).sort().forEach((e) => propertyOptions.push({ label: e, data: e }));
 
         const comparisonOptions = [
@@ -257,7 +257,23 @@ function getBulkUIComponent(popup: any) {
                 else if (selectedComparison == '!contains' && !checkedApp[selectedProperty].includes(Number(comparisonValue))) filteredList.push(checkedApp);
                 else if (selectedComparison == 'true' && checkedApp[selectedProperty]) filteredList.push(checkedApp);
                 else if (selectedComparison == 'false' && !checkedApp[selectedProperty]) filteredList.push(checkedApp);
-                else console.log("[steam-collections-plus] Bad comparison operator");
+                else if (selectedProperty == 'in_collection') {
+                    let checkedColl = collectionStore.GetCollection(comparisonValue);
+                    if (!checkedColl) {
+                        const namedCollList = collectionStore.GetUserCollectionsByName(comparisonValue);
+                        if (namedCollList.length > 0)
+                            checkedColl = namedCollList[0];
+                    }
+
+                    if (checkedColl) {
+                        const foundInColl = (checkedColl.allApps.some((x: any) => x.appid == checkedApp.appid));
+                        if (selectedComparison == 'true' && foundInColl) filteredList.push(checkedApp);
+                        else if (selectedComparison == 'false' && !foundInColl) filteredList.push(checkedApp);
+                        else console.log("[steam-collections-plus] Bad comparison operator");
+                    } else {
+                        console.log("[steam-collections-plus] Collection does not exist");
+                    }
+                } else console.log("[steam-collections-plus] Bad comparison operator");
             }
             setCurrentAppList(filteredList);
         };
