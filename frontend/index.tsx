@@ -187,9 +187,11 @@ function getBulkUIComponent(popup: any) {
         };
 
         const itemStyle: React.CSSProperties = {
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4
+            width: '200px'
+        };
+
+        const itemStyleLong: React.CSSProperties = {
+            width: '300px'
         };
 
         const [managedCollectionID, setManagedCollectionID] = useState<string>("");
@@ -209,7 +211,7 @@ function getBulkUIComponent(popup: any) {
         ];
 
         let propertyOptions: DropdownOption[] = [];
-        Object.keys(appStore.allApps[0]).forEach((e) => propertyOptions.push({ label: e, data: e }));
+        Object.keys(appStore.allApps[0]).sort().forEach((e) => propertyOptions.push({ label: e, data: e }));
 
         const comparisonOptions = [
             { label: '==', data: '==' },
@@ -287,7 +289,7 @@ function getBulkUIComponent(popup: any) {
                         <span>Source:</span>
                         <Dropdown rgOptions={sourceOptions} selectedOption={selectedSource} onChange={async (option: { data: string; label: string }) => {setSelectedSource(option.data)}} />
                     </div>
-                    <div style={itemStyle}>
+                    <div style={itemStyleLong}>
                         <span>Property:</span>
                         <Dropdown rgOptions={propertyOptions} selectedOption={selectedProperty} onChange={async (option: { data: string; label: string }) => {setSelectedProperty(option.data)}} />
                     </div>
@@ -732,7 +734,7 @@ async function OnPopupCreation(popup: any) {
                                     <ModalRoot closeModal={() => {}}>
                                         <span style={{textTransform: "uppercase"}}><b>{managedFolderName}</b></span> <br />
                                         <br />
-                                        Create subfolder (EXPERIMENTAL): <br />
+                                        Create subfolder: <br />
                                         <TextField id="newFolderName" placeholder="Folder"></TextField>
                                         <DialogButton style={{width: "120px"}} onClick={AddNewFolder}>Add</DialogButton>
                                         <hr />
