@@ -221,8 +221,12 @@ function getBulkUIComponent(popup: any) {
             { label: '<=', data: '<=' },
             { label: '>=', data: '>=' },
             { label: 'starts with', data: 'startsWith' },
-            { label: 'contains', data: 'contains' },
-            { label: 'does not contain', data: '!contains' },
+            { label: 'contains (num)', data: 'contains-num' },
+            { label: 'does not contain (num)', data: '!contains-num' },
+            { label: 'contains (str)', data: 'contains-str' },
+            { label: 'does not contain (str)', data: '!contains-str' },
+            { label: 'contained in (delim ;)', data: 'contained-in' },
+            { label: 'not contained in (delim ;)', data: '!contained-in' },
             { label: 'is true', data: 'true' },
             { label: 'is false', data: 'false' }
         ];
@@ -245,6 +249,7 @@ function getBulkUIComponent(popup: any) {
                 console.log("[steam-collections-plus] Bad source");
 
             let filteredList: any[] = [];
+            const comparisonSplit = comparisonValue.split(";");
             for (const checkedApp of inputList) {
                 if (selectedComparison == '==' && checkedApp[selectedProperty] == comparisonValue) filteredList.push(checkedApp);
                 else if (selectedComparison == '!=' && checkedApp[selectedProperty] != comparisonValue) filteredList.push(checkedApp);
@@ -253,8 +258,12 @@ function getBulkUIComponent(popup: any) {
                 else if (selectedComparison == '<=' && checkedApp[selectedProperty] <= comparisonValue) filteredList.push(checkedApp);
                 else if (selectedComparison == '>=' && checkedApp[selectedProperty] >= comparisonValue) filteredList.push(checkedApp);
                 else if (selectedComparison == 'startsWith' && checkedApp[selectedProperty].startsWith(comparisonValue)) filteredList.push(checkedApp);
-                else if (selectedComparison == 'contains' && checkedApp[selectedProperty].includes(Number(comparisonValue))) filteredList.push(checkedApp);
-                else if (selectedComparison == '!contains' && !checkedApp[selectedProperty].includes(Number(comparisonValue))) filteredList.push(checkedApp);
+                else if (selectedComparison == 'contains-num' && checkedApp[selectedProperty].includes(Number(comparisonValue))) filteredList.push(checkedApp);
+                else if (selectedComparison == '!contains-num' && !checkedApp[selectedProperty].includes(Number(comparisonValue))) filteredList.push(checkedApp);
+                else if (selectedComparison == 'contains-str' && checkedApp[selectedProperty].includes(comparisonValue)) filteredList.push(checkedApp);
+                else if (selectedComparison == '!contains-str' && !checkedApp[selectedProperty].includes(comparisonValue)) filteredList.push(checkedApp);
+                else if (selectedComparison == 'contained-in' && comparisonSplit.includes(checkedApp[selectedProperty].toString())) filteredList.push(checkedApp);
+                else if (selectedComparison == '!contained-in' && !comparisonSplit.includes(checkedApp[selectedProperty].toString())) filteredList.push(checkedApp);
                 else if (selectedComparison == 'true' && checkedApp[selectedProperty]) filteredList.push(checkedApp);
                 else if (selectedComparison == 'false' && !checkedApp[selectedProperty]) filteredList.push(checkedApp);
                 else if (selectedProperty == 'in_collection') {
